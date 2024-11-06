@@ -1,4 +1,5 @@
- 
 /.env
 /tests
 /tree.bat
+/.env.local
+/.env.production

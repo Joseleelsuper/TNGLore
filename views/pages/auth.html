@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/public/css/style.css">
+    <link rel="stylesheet" href="/public/css/pages/auth.css">
+    <title>Autenticación</title>
+</head>
+<body>
+    <div class="auth-container">
+        <!-- Login Section -->
+        <section id="login-section" class="active">
+            <div class="container">
+                <div class="form-container">
+                    <form class="login-form">
+                        <h2>Iniciar Sesión</h2>
+                        <div class="form-group">
+                            <input type="text" placeholder="Usuario o correo electrónico" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" placeholder="Contraseña" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Iniciar Sesión</button>
+                        <button type="button" class="btn-discord">
+                            <img src="https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/discord.svg" alt="Discord Icon" class="discord-icon">
+                            Iniciar sesión con Discord
+                        </button>
+                        <div class="form-links">
+                            <a href="#" class="switch-form" data-target="register">Registrarse</a>
+                            <a href="#">Olvidé la contraseña</a>
+                        </div>
+                    </form>
+                </div>
+                <div class="image-container">
+                    <img src="/public/assets/images/lost_treassure.jpg" alt="Tesoro perdido">
+                </div>
+            </div>
+        </section>
+
+        <!-- Register Section -->
+        <section id="register-section" class="inactive">
+            <div class="container">
+                <div class="image-container">
+                    <img src="/public/assets/images/estampitqa_pirata_3.jpg" alt="Estampa pirata">
+                </div>
+                <div class="form-container">
+                    <form class="register-form">
+                        <h2>Registro</h2>
+                        <div class="form-group">
+                            <input type="text" placeholder="Nombre de usuario" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" placeholder="Correo electrónico" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" placeholder="Contraseña" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Registrarse</button>
+                        <div class="form-links">
+                            <a href="#" class="switch-form" data-target="login">Ya tengo cuenta</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+    <script src="/public/js/utils/auth-transitions.js"></script>
+</body>
+</html>
