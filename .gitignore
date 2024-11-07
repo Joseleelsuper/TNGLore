@@ -3,3 +3,4 @@
 /tree.bat
 /.env.local
 /.env.production
+/public/serve.json
