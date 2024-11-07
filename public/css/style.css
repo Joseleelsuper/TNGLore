@@ -200,12 +200,12 @@ section.active {
         object-position: center center;
     }
 
-    /* Ajuste específico para imagen 'estampitqa_pirata_3.jpg' */
+    /* Ajuste específico para imagen 'estampitqa_pirata_3.webp' */
     #register-section .image-container img {
         object-position: center 0%;
     }
 
-    /* Ajuste específico para imagen 'lost_treassure.jpg' */
+    /* Ajuste específico para imagen 'lost_treassure.webp' */
     #login-section .image-container img {
         object-position: center 80%;
     }
@@ -231,12 +231,12 @@ section.active {
         object-position: center center;
     }
 
-    /* Ajuste específico para imagen 'estampitqa_pirata_3.jpg' */
+    /* Ajuste específico para imagen 'estampitqa_pirata_3.webp' */
     #register-section .image-container img {
         object-position: center 0%;
     }
 
-    /* Ajuste específico para imagen 'lost_treassure.jpg' */
+    /* Ajuste específico para imagen 'lost_treassure.webp' */
     #login-section .image-container img {
         object-position: center 80%;
     }

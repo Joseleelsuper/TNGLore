@@ -1,0 +1,5 @@
+{
+    "rewrites": [
+      { "source": "/auth", "destination": "/views/pages/auth.html" }
+    ]
+  }
