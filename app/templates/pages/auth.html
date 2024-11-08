@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="{{ url_for('static', filename='assets/icons/El_Super.webp') }}">
+    <link rel="icon" href="{{ images['icons']['favicon'] }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/auth.css') }}">
+    <script src="{{ url_for('static', filename='js/utils/auth-transitions.js') }}"></script>
     <title>TNGLore - Autenticación</title>
 </head>
 <body>
@@ -24,7 +25,7 @@
                         </div>
                         <button type="submit" class="btn-primary">Iniciar Sesión</button>
                         <button type="button" class="btn-discord">
-                            <img src="https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/discord.svg" alt="Discord Icon" class="discord-icon">
+                            <img src="{{ images['icons']['discord'] }}" alt="Discord Icon" class="discord-icon">
                             Iniciar sesión con Discord
                         </button>
                         <div class="form-links">
@@ -34,7 +35,7 @@
                     </form>
                 </div>
                 <div class="image-container">
-                    <img src="{{ url_for('static', filename='assets/images/lost_treassure.webp') }}" alt="Tesoro perdido">
+                    <img src="{{ images['auth']['login'] }}" alt="Tesoro perdido">
                 </div>
             </div>
         </section>
@@ -43,7 +44,7 @@
         <section id="register-section" class="inactive">
             <div class="container">
                 <div class="image-container">
-                    <img src="{{ url_for('static', filename='assets/images/estampitqa_pirata_3.webp') }}" alt="Estampa pirata">
+                    <img src="{{ images['auth']['register'] }}" alt="Estampa pirata">
                 </div>
                 <div class="form-container">
                     <form class="register-form" method="POST" action="/register">
@@ -66,6 +67,5 @@
             </div>
         </section>
     </div>
-    <script src="{{ url_for('static', filename='js/utils/auth-transitions.js') }}"></script>
 </body>
 </html>

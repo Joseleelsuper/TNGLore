@@ -1,0 +1,11 @@
+{
+    "icons": {
+        "favicon": "https://cdn.jsdelivr.net/gh/joseleelsuper/TNGLore@main/app/static/assets/icons/El_Super.ico",
+        "discord": "https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/discord.svg",
+        "default_profile": "https://cdn.jsdelivr.net/gh/joseleelsuper/TNGLore@main/app/static/assets/icons/default-profile.png"
+    },
+    "auth": {
+        "login": "https://cdn.jsdelivr.net/gh/joseleelsuper/TNGLore@main/app/static/assets/images/lost_treassure.webp",
+        "register": "https://cdn.jsdelivr.net/gh/joseleelsuper/TNGLore@main/app/static/assets/images/estampitqa_pirata_3.webp"
+    }
+}
