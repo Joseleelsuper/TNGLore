@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="../../assets/icons/El_Super.webp" type="image/webp">
-    <link rel="stylesheet" href="../../css/style.css">
-    <link rel="stylesheet" href="../../css/pages/auth.css">
+    <link rel="icon" href="{{ url_for('static', filename='assets/icons/El_Super.webp') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/auth.css') }}">
     <title>TNGLore - Autenticación</title>
 </head>
 <body>
@@ -14,13 +14,13 @@
         <section id="login-section" class="active">
             <div class="container">
                 <div class="form-container">
-                    <form class="login-form">
+                    <form class="login-form" method="POST" action="{{ url_for('auth.login') }}">
                         <h2>Iniciar Sesión</h2>
                         <div class="form-group">
-                            <input type="text" placeholder="Usuario o correo electrónico" required>
+                            <input type="text" name="usernameOrEmail" placeholder="Usuario o correo electrónico" required>
                         </div>
                         <div class="form-group">
-                            <input type="password" placeholder="Contraseña" required>
+                            <input type="password" name="password" placeholder="Contraseña" required>
                         </div>
                         <button type="submit" class="btn-primary">Iniciar Sesión</button>
                         <button type="button" class="btn-discord">
@@ -34,7 +34,7 @@
                     </form>
                 </div>
                 <div class="image-container">
-                    <img src="../../assets/images/lost_treassure.webp" alt="Tesoro perdido">
+                    <img src="{{ url_for('static', filename='assets/images/lost_treassure.webp') }}" alt="Tesoro perdido">
                 </div>
             </div>
         </section>
@@ -43,19 +43,19 @@
         <section id="register-section" class="inactive">
             <div class="container">
                 <div class="image-container">
-                    <img src="../../assets/images/estampitqa_pirata_3.webp" alt="Estampa pirata">
+                    <img src="{{ url_for('static', filename='assets/images/estampitqa_pirata_3.webp') }}" alt="Estampa pirata">
                 </div>
                 <div class="form-container">
-                    <form class="register-form">
+                    <form class="register-form" method="POST" action="/register">
                         <h2>Registro</h2>
                         <div class="form-group">
-                            <input type="text" placeholder="Nombre de usuario" required>
+                            <input type="text" name="username" placeholder="Nombre de usuario" required>
                         </div>
                         <div class="form-group">
-                            <input type="email" placeholder="Correo electrónico" required>
+                            <input type="email" name="email" placeholder="Correo electrónico" required>
                         </div>
                         <div class="form-group">
-                            <input type="password" placeholder="Contraseña" required>
+                            <input type="password" name="password" placeholder="Contraseña" required>
                         </div>
                         <button type="submit" class="btn-primary">Registrarse</button>
                         <div class="form-links">
@@ -66,6 +66,6 @@
             </div>
         </section>
     </div>
-    <script src="../../js/utils/auth-transitions.js"></script>
+    <script src="{{ url_for('static', filename='js/utils/auth-transitions.js') }}"></script>
 </body>
 </html>

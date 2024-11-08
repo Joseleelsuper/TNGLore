@@ -1,6 +1,0 @@
-{
-    "rewrites": [
-        { "source": "/auth", "destination": "/views/pages/auth.html" },
-        { "source": "/inicio", "destination": "/views/pages/inicio.html" }
-    ]
-  }
