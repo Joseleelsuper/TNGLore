@@ -24,7 +24,10 @@
                             <input type="password" name="password" placeholder="Contraseña" required>
                         </div>
                         <button type="submit" class="btn-primary">Iniciar Sesión</button>
-                        <button type="button" class="btn-discord">
+                        <script>
+                            var discordLoginUrl = '{{ url_for("auth.discord_login") }}';
+                        </script>
+                        <button type="button" class="btn-discord" onclick='window.location.href=discordLoginUrl'>
                             <img src="{{ images['icons']['discord'] }}" alt="Discord Icon" class="discord-icon">
                             Iniciar sesión con Discord
                         </button>

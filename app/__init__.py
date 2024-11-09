@@ -10,24 +10,22 @@ mongo = None
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(Config)
+    app.config.from_object('config.settings.Config')
     
     # Inicializar extensiones
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
+    login_manager.login_view = 'auth.auth'
     bcrypt.init_app(app)
     
     # Conectar MongoDB
     global mongo
-    mongo = MongoClient(app.config['MONGODB_URI'])
+    mongo = MongoClient(app.config['MONGODB_URI']).tnglore
     
     # Registrar blueprints
     from app.routes.auth import auth_bp
-    app.register_blueprint(auth_bp)
+    from app.routes.main import main_bp
     
-    # Añadir ruta principal
-    @app.route('/')
-    def index():
-        return redirect(url_for('auth.auth'))
+    app.register_blueprint(auth_bp, url_prefix='/')
+    app.register_blueprint(main_bp)
     
     return app

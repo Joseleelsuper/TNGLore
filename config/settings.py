@@ -15,3 +15,7 @@ else:
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev')
     MONGODB_URI = os.getenv('MONGODB_URI')
+    
+    # Permitir HTTP en desarrollo local
+    if os.getenv('ENVIRONMENT') == 'local':
+        os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
