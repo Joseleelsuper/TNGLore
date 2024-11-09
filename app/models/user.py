@@ -23,7 +23,7 @@ class User(UserMixin):
     @staticmethod
     def get_by_id(user_id):
         try:
-            user_data = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+            user_data = mongo.users.find_one({'_id': ObjectId(user_id)})
             if user_data:
                 return User(
                     username=user_data['username'],
@@ -38,7 +38,7 @@ class User(UserMixin):
 
     @staticmethod
     def get_by_username(username):
-        user_data = mongo.db.users.find_one({
+        user_data = mongo.users.find_one({
             '$or': [
                 {'username': username},
                 {'email': username}
@@ -61,7 +61,7 @@ class User(UserMixin):
 
     @staticmethod
     def get_by_discord_id(discord_id):
-        user_data = mongo.db.users.find_one({'discord_id': discord_id})
+        user_data = mongo.users.find_one({'discord_id': discord_id})
         if user_data:
             return User(
                 username=user_data['username'],

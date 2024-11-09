@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>TNGLore - Inicio</title>
-    <link rel="icon" href="/assets/icons/El_Super.webp" type="image/webp">
-    <link rel="stylesheet" href="../../css/style.css">
-    <link rel="stylesheet" href="../../css/components/header.css">
+    <link rel="icon" href="{{ images['icons']['favicon'] }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/header.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <title>TNGLore - Inicio</title>
 </head>
 <body>
     <!-- Incluir el header -->
@@ -21,7 +21,7 @@
             <li><a href="/colecciones"><strong>Colecciones</strong></a></li>
             <li>
                 <a href="/perfil">
-                    <span class="{{ images['icons']['default_profile'] }}" style="font-size: 48px;">perfil</span>
+                    <span class="material-icons person" style="font-size: 48px;">person</span>
                 </a>
             </li>
                 <!-- Panel de administrador (se mostrará si el usuario es administrador) -->

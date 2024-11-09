@@ -1,14 +1,18 @@
 import json
 import os
 from requests_oauthlib import OAuth2Session
-from flask import Blueprint, render_template, redirect, url_for, request, flash, session
+from flask import Blueprint, render_template, redirect, url_for, request, flash, session, current_app
 from flask_login import login_user, logout_user, login_required
 from app.models.user import User
 from app import bcrypt, mongo
+import logging
+
+# Permitir OAuth sin HTTPS en desarrollo
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID')
 DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
-DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI')
+DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI')  # URL exacta
 API_BASE_URL = 'https://discord.com/api'
 
 auth_bp = Blueprint('auth', __name__)
@@ -50,65 +54,90 @@ def login():
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    username = request.form.get('username')
-    email = request.form.get('email')
-    password = request.form.get('password')
-    
-    if mongo.db.users.find_one({'$or': [{'username': username}, {'email': email}]}):
-        flash('El usuario o email ya existe')
+    try:
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        if mongo.users.find_one({'$or': [{'username': username}, {'email': email}]}):
+            flash('El usuario o email ya existe')
+            return redirect(url_for('auth.auth'))
+        
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        user_data = {
+            'username': username,
+            'email': email,
+            'password': hashed_password,
+            'discord_id': None,
+            'pfp': None,
+            'guilds': [],
+            'chests': [],
+            'registration_method': 'Normal',
+            'is_admin': False
+        }
+        
+        result = mongo.users.insert_one(user_data)
+        
+        user_data['_id'] = result.inserted_id
+        user = User(**user_data)
+        login_user(user)
+        
+        return redirect(url_for('main.inicio'))
+        
+    except Exception as e:
+        flash('Error al registrar usuario')
         return redirect(url_for('auth.auth'))
-    
-    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    user_data = {
-        'username': username,
-        'email': email,
-        'password': hashed_password,
-        'discord_id': None,
-        'pfp': None,
-        'guilds': [],
-        'chests': [],
-        'registration_method': 'Normal',
-        'is_admin': False
-    }
-    
-    result = mongo.db.users.insert_one(user_data)
-    user_data['_id'] = result.inserted_id
-    user = User(**user_data)
-    login_user(user)
-    
-    return redirect(url_for('main.inicio'))
 
 @auth_bp.route('/login/discord')
 def discord_login():
-    discord = make_discord_session()
-    authorization_url, state = discord.authorization_url(
-        f'{API_BASE_URL}/oauth2/authorize'
-    )
-    session['oauth2_state'] = state
-    return redirect(authorization_url)
+    try:
+        discord = make_discord_session()
+        authorization_url, state = discord.authorization_url(
+            'https://discord.com/api/oauth2/authorize',
+            prompt='consent'
+        )
+        session['oauth2_state'] = state
+        return redirect(authorization_url)
+    except Exception as error:
+        logging.error(f"Error en discord_login: {str(error)}")
+        flash('Error al conectar con Discord')
+        return redirect(url_for('auth.auth'))
 
 @auth_bp.route('/api/auth/redirect')
 def discord_callback():
     if request.values.get('error'):
+        flash('Error de autorización con Discord')
         return redirect(url_for('auth.auth'))
 
     try:
         discord = make_discord_session(state=session.get('oauth2_state'))
+        
         token = discord.fetch_token(
-            f'{API_BASE_URL}/oauth2/token',
+            'https://discord.com/api/oauth2/token',
             client_secret=DISCORD_CLIENT_SECRET,
-            authorization_response=request.url
+            authorization_response=request.url.replace('http://', 'https://')
         )
 
         discord = make_discord_session(token=token)
-        user_data = discord.get(f'{API_BASE_URL}/users/@me').json()
-        guilds_data = discord.get(f'{API_BASE_URL}/users/@me/guilds').json()
+        
+        # Obtener datos del usuario
+        user_response = discord.get('https://discord.com/api/users/@me')
+        if user_response.status_code != 200:
+            raise Exception(f"Error al obtener datos de usuario: {user_response.text}")
+        
+        user_data = user_response.json()
+        
+        # Obtener guilds
+        guilds_response = discord.get('https://discord.com/api/users/@me/guilds')
+        if guilds_response.status_code != 200:
+            raise Exception(f"Error al obtener guilds: {guilds_response.text}")
+            
+        guilds_data = guilds_response.json()
 
-        # Buscar si el usuario ya existe por discord_id
+        # Procesar usuario
         existing_user = User.get_by_discord_id(user_data['id'])
         
         if existing_user:
-            # Actualizar información de Discord
             existing_user.update_discord_info(user_data, guilds_data)
             mongo.db.users.update_one(
                 {'_id': existing_user._id},
@@ -120,7 +149,6 @@ def discord_callback():
             )
             login_user(existing_user)
         else:
-            # Crear nuevo usuario
             new_user = User.create_from_discord(user_data)
             new_user.update_discord_info(user_data, guilds_data)
             result = mongo.db.users.insert_one({
@@ -138,9 +166,10 @@ def discord_callback():
             login_user(new_user)
 
         return redirect(url_for('main.inicio'))
-    except Exception as e:
-        print(f"Error en discord_callback: {str(e)}")
-        flash('Error al iniciar sesión con Discord')
+        
+    except Exception as error:
+        logging.error(f"Error en discord_callback: {str(error)}")
+        flash('Error al procesar la autenticación con Discord')
         return redirect(url_for('auth.auth'))
 
 @auth_bp.route('/logout')
