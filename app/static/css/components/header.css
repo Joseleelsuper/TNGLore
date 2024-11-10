@@ -9,28 +9,145 @@ header {
 .logo a {
     color: #000000;
     text-decoration: none;
-    font-size: 1.5rem;
+    font-size: 2rem;
+    font-weight: bold;
+    transition: color 0.3s;
 }
 
+.logo a:hover {
+    color: #ffffff;
+}
+
+.nav-toggle {
+    display: none;  /* Oculto por defecto */
+}
+
+nav {
+    margin-left: auto; /* Mueve nav a la derecha */
+}
+
+/* Estilos para el menú desplegable */
 nav ul {
     list-style: none;
     display: flex;
     align-items: center;
     gap: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+nav ul.active {
+    transform: translateX(0);
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
 }
 
 nav ul li a {
     color: #000000;
     text-decoration: none;
-    transition: opacity 0.3s;
+    font-size: 1.1rem;
+    transition: color 0.3s;
 }
 
 nav ul li a:hover {
-    opacity: 0.7;
+    color: #ffffff;
 }
 
 .profile-icon {
     width: 48px;
     height: 48px;
     border-radius: 50%;
+}
+
+/* Tablet (max-width: 900px) */
+@media (max-width: 900px) {
+    header {
+        padding: 0.8rem 1.5rem;
+    }
+
+    .logo a {
+        font-size: 1.5rem;
+    }
+
+    nav ul {
+        gap: 1rem;
+    }
+
+    nav ul li a {
+        font-size: 1rem;
+    }
+
+    .profile-icon {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* Móvil (max-width: 480px) */
+@media (max-width: 480px) {
+    header {
+        padding: 4%;
+        position: relative;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .logo a {
+        color: #000000;
+        text-decoration: none;
+        font-size: 400%; /* Aumentar tamaño del título */
+        font-weight: bold;
+    }
+
+    /* Menú hamburguesa */
+    .nav-toggle {
+        display: block;
+        cursor: pointer;
+        background: none;
+        border: none;
+        color: #000000;
+        padding: 1rem;
+        font-size: 2rem; /* Aumentar tamaño del menú */
+    }
+
+    nav ul {
+        display: none;
+        position: fixed;
+        top: 0;
+        right: 0; /* Ajustar a la derecha */
+        width: 40%;
+        height: 100%;
+        flex-direction: column;
+        background-color: #4d7cff;
+        padding: 2rem;
+        transform: translateX(100%);
+        transition: transform 0.3s ease; /* Añadir animación */
+        z-index: 1000;
+    }
+
+    nav ul.active {
+        transform: translateX(0);
+    }
+
+    nav ul li {
+        width: 100%;
+        text-align: center;
+    }
+
+    nav ul li a {
+        font-size: 1.5rem; /* Aumentar tamaño del texto */
+    }
+
+    .profile-icon {
+        width: 32px;
+        height: 32px;
+    }
 }

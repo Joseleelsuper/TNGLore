@@ -6,38 +6,17 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/header.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="../../static/js/pages/inicio.js"></script>
     <title>TNGLore - Inicio</title>
 </head>
 <body>
-    <!-- Incluir el header -->
-    <header>
-        <div class="logo">
-            <a href="/inicio"><strong>TNGLore</strong></a>
-        </div>
-        <nav>
-            <ul>
-            <li><a href="/coleccion"><strong>Mi Colección</strong></a></li>
-            <li><a href="/cofres"><strong>Mis Cofres</strong></a></li>
-            <li><a href="/colecciones"><strong>Colecciones</strong></a></li>
-            <li>
-                <a href="/perfil">
-                    <span class="material-icons person" style="font-size: 48px;">person</span>
-                </a>
-            </li>
-                <!-- Panel de administrador (se mostrará si el usuario es administrador) -->
-                <!--
-                <li><a href="/admin">Panel de Administrador</a></li>
-                -->
-            </ul>
-        </nav>
-    </header>
+    <!-- Encabezado -->
+    {% include 'components/header.html' %}
 
     <!-- Contenido principal -->
     <main>
         <h1>Bienvenido a TNGLore</h1>
         <!-- Agrega aquí el contenido que desees -->
     </main>
-
-    <script src="/js/main.js"></script>
 </body>
 </html>
