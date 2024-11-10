@@ -1,5 +1,7 @@
 <header>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/header.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/utils/header.js') }}"></script>
     <div class="logo">
         <a href="/inicio"><strong>TNGLore</strong></a>
     </div>
@@ -13,10 +15,12 @@
                     <span class="material-icons person" style="font-size: 48px;">person</span>
                 </a>
             </li>
-            <!-- Panel de administrador (se mostrará si el usuario es administrador) -->
+            <li id="admin-panel" style="display: none;">
+                <a href="/admin"><strong>Panel de Administrador</strong></a>
+            </li>
         </ul>
     </nav>
-    <button class="nav-toggle" style="font-size: 128px;">
+    <button class="nav-toggle" style="font-size: 96px;">
         <span class="material-icons menu" style="font-size: 128px;">menu</span>
     </button>
 </header>

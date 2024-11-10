@@ -60,40 +60,9 @@ nav ul li a:hover {
     color: #ffffff;
 }
 
-.profile-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-}
-
-/* Tablet (max-width: 900px) */
 @media (max-width: 900px) {
     header {
-        padding: 0.8rem 1.5rem;
-    }
-
-    .logo a {
-        font-size: 1.5rem;
-    }
-
-    nav ul {
-        gap: 1rem;
-    }
-
-    nav ul li a {
-        font-size: 1rem;
-    }
-
-    .profile-icon {
-        width: 40px;
-        height: 40px;
-    }
-}
-
-/* Móvil (max-width: 480px) */
-@media (max-width: 480px) {
-    header {
-        padding: 4%;
+        padding: 0;
         position: relative;
         flex-direction: row;
         justify-content: space-between;
@@ -101,21 +70,20 @@ nav ul li a:hover {
     }
 
     .logo a {
+        padding: 2rem;
         color: #000000;
         text-decoration: none;
         font-size: 400%; /* Aumentar tamaño del título */
         font-weight: bold;
     }
 
-    /* Menú hamburguesa */
     .nav-toggle {
         display: block;
         cursor: pointer;
         background: none;
         border: none;
         color: #000000;
-        padding: 1rem;
-        font-size: 2rem; /* Aumentar tamaño del menú */
+        padding: 2rem;
     }
 
     nav ul {
@@ -144,10 +112,5 @@ nav ul li a:hover {
 
     nav ul li a {
         font-size: 1.5rem; /* Aumentar tamaño del texto */
-    }
-
-    .profile-icon {
-        width: 32px;
-        height: 32px;
     }
 }

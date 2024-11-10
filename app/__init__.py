@@ -9,37 +9,38 @@ login_manager = LoginManager()
 bcrypt = Bcrypt()
 mongo = None
 
+
 def create_app():
     app = Flask(__name__)
-    app.config.from_object('config.settings.Config')
-    
+    app.config.from_object("config.settings.Config")
+
     # Inicializar extensiones
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.auth'
+    login_manager.login_view = "auth.auth"
     bcrypt.init_app(app)
-    
+
     # Conectar MongoDB con manejo de errores
     try:
         global mongo
-        mongo_uri = os.getenv('MONGODB_URI')
+        mongo_uri = os.getenv("MONGODB_URI")
         if not mongo_uri:
             raise ValueError("MONGODB_URI no está configurado")
-            
+
         client = MongoClient(mongo_uri)
         # Verificar conexión
-        client.admin.command('ping')
+        client.admin.command("ping")
         mongo = client.tnglore
         app.logger.info("Conexión exitosa a MongoDB")
-        
+
     except Exception as e:
         app.logger.error(f"Error conectando a MongoDB: {str(e)}")
         raise
-    
+
     # Registrar blueprints
     from app.routes.auth import auth_bp
     from app.routes.main import main_bp
-    
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
-    
+
     return app
