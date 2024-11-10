@@ -23,5 +23,3 @@ class Config:
     SESSION_COOKIE_SECURE = ENVIRONMENT == 'production'  # HTTPS solo en producción
     SESSION_COOKIE_HTTPONLY = True  # No accesible por JavaScript
     SESSION_COOKIE_SAMESITE = 'Lax'  # Protección CSRF
-
-    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'

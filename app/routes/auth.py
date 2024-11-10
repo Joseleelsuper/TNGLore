@@ -1,4 +1,3 @@
-import json
 import os
 from requests_oauthlib import OAuth2Session
 from flask import Blueprint, render_template, redirect, url_for, request, flash, session, current_app
@@ -6,6 +5,8 @@ from flask_login import login_user, logout_user, login_required
 from app.models.user import User
 from app import bcrypt, mongo
 import logging
+
+from app.utils.images import get_images
 
 # Permitir OAuth sin HTTPS en desarrollo
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -16,10 +17,6 @@ DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI')  # URL exacta
 API_BASE_URL = 'https://discord.com/api'
 
 auth_bp = Blueprint('auth', __name__)
-
-def get_images():
-    with open('app/static/config/images.json', 'r') as f:
-        return json.load(f)
 
 def token_updater(token):
     session['oauth2_token'] = token
@@ -49,7 +46,7 @@ def login():
         login_user(user)
         return redirect(url_for('main.inicio'))
     
-    flash('Usuario o contraseña incorrectos')
+    flash('Usuario o contraseña incorrectos', category="error")
     return redirect(url_for('auth.auth'))
 
 @auth_bp.route('/register', methods=['POST'])
@@ -93,7 +90,7 @@ def discord_login():
     try:
         discord = make_discord_session()
         authorization_url, state = discord.authorization_url(
-            'https://discord.com/api/oauth2/authorize',
+            f'{API_BASE_URL}/oauth2/authorize',
             prompt='consent'
         )
         session['oauth2_state'] = state
@@ -113,7 +110,7 @@ def discord_callback():
         discord = make_discord_session(state=session.get('oauth2_state'))
         
         token = discord.fetch_token(
-            'https://discord.com/api/oauth2/token',
+            f'{API_BASE_URL}/oauth2/token',
             client_secret=DISCORD_CLIENT_SECRET,
             authorization_response=request.url.replace('http://', 'https://')
         )
@@ -121,14 +118,14 @@ def discord_callback():
         discord = make_discord_session(token=token)
         
         # Obtener datos del usuario
-        user_response = discord.get('https://discord.com/api/users/@me')
+        user_response = discord.get(f'{API_BASE_URL}/users/@me')
         if user_response.status_code != 200:
             raise Exception(f"Error al obtener datos de usuario: {user_response.text}")
         
         user_data = user_response.json()
         
         # Obtener guilds
-        guilds_response = discord.get('https://discord.com/api/users/@me/guilds')
+        guilds_response = discord.get(f'{API_BASE_URL}/users/@me/guilds')
         if guilds_response.status_code != 200:
             raise Exception(f"Error al obtener guilds: {guilds_response.text}")
             
@@ -151,7 +148,7 @@ def discord_callback():
         else:
             new_user = User.create_from_discord(user_data)
             new_user.update_discord_info(user_data, guilds_data)
-            result = mongo.db.users.insert_one({
+            result = mongo.users.insert_one({
                 'username': new_user.username,
                 'email': new_user.email,
                 'password': None,
