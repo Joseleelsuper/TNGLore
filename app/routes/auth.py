@@ -1,3 +1,4 @@
+from functools import wraps
 import os
 from requests_oauthlib import OAuth2Session
 from flask import (
@@ -45,8 +46,7 @@ def make_discord_session(token=None, state=None):
 @auth_bp.route("/", methods=["GET"])
 @auth_bp.route("/auth", methods=["GET"])
 def auth():
-    images = get_images()
-    return render_template("pages/auth.html", images=images)
+    return render_template("pages/auth.html", images=get_images())
 
 
 @auth_bp.route("/login", methods=["POST"])

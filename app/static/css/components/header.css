@@ -6,6 +6,10 @@ header {
     background-color: #4d7cff;
 }
 
+body.menu-open {
+    overflow: hidden;
+}
+
 .logo a {
     color: #000000;
     text-decoration: none;
@@ -18,16 +22,13 @@ header {
     color: #ffffff;
 }
 
-.nav-toggle {
-    display: none;  /* Oculto por defecto */
-}
-
 nav {
     margin-left: auto; /* Mueve nav a la derecha */
 }
 
 /* Estilos para el menú desplegable */
 nav ul {
+    display: none;
     list-style: none;
     display: flex;
     align-items: center;
@@ -49,15 +50,43 @@ nav ul.active {
     z-index: 999;
 }
 
+/* Efecto hover para los elementos del menú */
 nav ul li a {
     color: #000000;
     text-decoration: none;
     font-size: 1.1rem;
-    transition: color 0.3s;
+    transition: color 0.3s ease; /* Añadido para suavizar la transición */
 }
 
-nav ul li a:hover {
+nav ul li a:hover,
+nav ul li a:active {
     color: #ffffff;
+}
+
+.nav-toggle {
+    display: none; /* Oculto por defecto */
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: #000000;
+    padding: 2rem;
+    transition: color 0.3s ease; /* Transición para el efecto hover */
+}
+
+.nav-toggle:hover,
+.nav-toggle:active {
+    color: #ffffff; /* Cambio a color blanco en hover y active */
+}
+
+/* Ajustes para pantallas grandes */
+@media (min-width: 901px) {
+    .nav-toggle {
+        display: none !important; /* Aseguramos que esté oculto en pantallas grandes */
+    }
+
+    nav ul {
+        display: flex !important; /* Aseguramos que el menú siempre esté visible en pantallas grandes */
+    }
 }
 
 @media (max-width: 900px) {
@@ -78,39 +107,59 @@ nav ul li a:hover {
     }
 
     .nav-toggle {
-        display: block;
-        cursor: pointer;
-        background: none;
-        border: none;
-        color: #000000;
-        padding: 2rem;
+        display: block; /* Mostramos el botón en pantallas pequeñas */
     }
 
     nav ul {
-        display: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between; /* Distribuye los elementos verticalmente */
+        align-items: stretch; /* Estira los elementos horizontalmente */
         position: fixed;
         top: 0;
-        right: 0; /* Ajustar a la derecha */
-        width: 40%;
+        right: -100%;
+        width: 70%;
         height: 100%;
-        flex-direction: column;
         background-color: #4d7cff;
-        padding: 2rem;
-        transform: translateX(100%);
-        transition: transform 0.3s ease; /* Añadir animación */
+        padding: 2rem 1rem; /* Reducido el padding horizontal */
+        transition: right 0.3s ease;
         z-index: 1000;
     }
 
     nav ul.active {
-        transform: translateX(0);
+        right: 0;
     }
 
     nav ul li {
-        width: 100%;
-        text-align: center;
+        flex-grow: 1; /* Permite que los elementos crezcan */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem; /* Espacio entre elementos */
+    }
+
+    nav ul li:last-child {
+        margin-bottom: 0; /* Elimina el margen del último elemento */
     }
 
     nav ul li a {
-        font-size: 1.5rem; /* Aumentar tamaño del texto */
+        width: 100%; /* Ocupa todo el ancho disponible */
+        padding: 1rem 0.5rem; /* Aumenta el área clickeable */
+        text-align: center;
+        font-size: 4rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Ajuste para el ícono de perfil */
+    nav ul li a .material-icons.person {
+        font-size: 128px !important; /* Ajusta el tamaño del ícono */
+    }
+
+    /* Estilo para el botón de administrador */
+    #admin-panel a {
+        background-color: #ff4d4d; /* Color distintivo para el botón de admin */
+        border-radius: 5px; /* Bordes redondeados */
     }
 }
