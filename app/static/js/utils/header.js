@@ -38,6 +38,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.is_admin) {
                 document.getElementById('admin-panel').style.display = 'flex';
             }
+            // Actualizar imagen de perfil
+            const profileIcon = document.getElementById('profile-icon');
+            if (data.pfp && data.pfp !== 'None') {
+                profileIcon.src = data.pfp;
+            } else {
+                // Ruta al ícono por defecto de Google Material Icons
+                profileIcon.src = 'https://fonts.gstatic.com/s/i/materialicons/person/v6/24px.svg';
+            }
+            profileIcon.style.width = '48px';
+            profileIcon.style.height = '48px';
         })
         .catch(error => console.error('Error al obtener información del usuario:', error));
 });

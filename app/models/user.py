@@ -42,10 +42,15 @@ class User(UserMixin):
                     password=user_data["password"],
                     _id=user_data["_id"],
                     is_admin=user_data.get("is_admin", False),
+                    discord_id=user_data.get("discord_id"),
+                    pfp=user_data.get("pfp"),
+                    guilds=user_data.get("guilds", []),
+                    chests=user_data.get("chests", []),
+                    registration_method=user_data.get("registration_method", "Normal"),
                 )
-        except:
+        except Exception as e:
+            print(f"Error en get_by_id: {e}")
             return None
-        return None
 
     @staticmethod
     def get_by_username(username):
@@ -92,8 +97,8 @@ class User(UserMixin):
             "email": discord_data["email"],
             "password": None,
             "discord_id": discord_data["id"],
-            "pfp": f"https://cdn.discordapp.com/avatars/{discord_data['id']}/{discord_data['avatar']}.png",
-            "guilds": [],  # Se llenará después con la info de los servidores
+            "pfp": f"https://cdn.discordapp.com/avatars/{discord_data['id']}/{discord_data['avatar']}" if discord_data["avatar"] else None,
+            "guilds": [],
             "chests": [],
             "registration_method": "Discord",
             "is_admin": False,
@@ -101,25 +106,53 @@ class User(UserMixin):
         return User(**user_data)
 
     def update_discord_info(self, discord_data, guilds_data):
-        self.discord_id = discord_data["id"]
-        self.pfp = f"https://cdn.discordapp.com/avatars/{discord_data['id']}/{discord_data['avatar']}.png"
+        self.pfp = f"https://cdn.discordapp.com/avatars/{discord_data['id']}/{discord_data['avatar']}" if discord_data["avatar"] else None
+        
+        # Crear diccionario de coleccionables existentes
+        existing_collections = {
+            guild["id"]: guild.get("coleccionables", [])
+            for guild in self.guilds
+        }
+        
+        # Actualizar guilds preservando coleccionables
         self.guilds = [
             {
                 "id": guild["id"],
                 "name": guild["name"],
-                "icon": guild["icon"],
+                "icon": f"https://cdn.discordapp.com/icons/{guild['id']}/{guild['icon']}" if guild["icon"] else None,
                 "banner": guild.get("banner"),
                 "owner": guild["owner"],
                 "permissions": guild["permissions"],
                 "permissions_new": guild["permissions_new"],
                 "features": guild.get("features", []),
-                "coleccionables": [],
+                "coleccionables": existing_collections.get(guild["id"], [])
             }
             for guild in guilds_data
         ]
 
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password, password)
+    
+    @staticmethod
+    def get_by_email(email):
+        user_data = mongo.users.find_one({'email': email})
+        if user_data:
+            return User(
+                username=user_data["username"],
+                email=user_data["email"],
+                password=user_data["password"],
+                _id=user_data["_id"],
+            )
+        return None
+    
+    def get_top_servers(self, limit=6):
+        # Ordenar servidores por cantidad de coleccionables
+        sorted_servers = sorted(
+            self.guilds,
+            key=lambda x: len(x.get('coleccionables', [])),
+            reverse=True
+        )
+        return sorted_servers[:limit]
 
 
 @login_manager.user_loader

@@ -145,17 +145,21 @@ def discord_callback():
             raise Exception(f"Error al obtener guilds: {guilds_response.text}")
 
         guilds_data = guilds_response.json()
-
         # Procesar usuario
         existing_user = User.get_by_discord_id(user_data["id"])
 
+        if not existing_user:
+            # Si no se encontró por discord_id, buscar por email
+            existing_user = User.get_by_email(user_data["email"])
+
         if existing_user:
+            # Actualizar información del usuario existente
+            existing_user.discord_id = user_data["id"]
             existing_user.update_discord_info(user_data, guilds_data)
-            mongo.db.users.update_one(
+            mongo.users.update_one(
                 {"_id": existing_user._id},
                 {
                     "$set": {
-                        "discord_id": existing_user.discord_id,
                         "pfp": existing_user.pfp,
                         "guilds": existing_user.guilds,
                     }
@@ -195,13 +199,13 @@ def logout():
     logout_user()
     return redirect(url_for("auth.auth"))
 
-
-@auth_bp.route("/api/user", methods=["GET"])
+@auth_bp.route('/api/user', methods=['GET'])
 @login_required
 def get_user_info():
     user_info = {
-        "username": current_user.username,
-        "email": current_user.email,
-        "is_admin": current_user.is_admin,
+        'username': current_user.username,
+        'email': current_user.email,
+        'is_admin': current_user.is_admin,
+        'pfp': current_user.pfp  # Asegúrate de que este campo existe en el modelo User
     }
     return jsonify(user_info)

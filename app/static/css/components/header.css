@@ -23,12 +23,10 @@ body.menu-open {
 }
 
 nav {
-    margin-left: auto; /* Mueve nav a la derecha */
+    margin-left: auto;
 }
 
-/* Estilos para el menú desplegable */
 nav ul {
-    display: none;
     list-style: none;
     display: flex;
     align-items: center;
@@ -38,6 +36,33 @@ nav ul {
 
 nav ul.active {
     transform: translateX(0);
+}
+
+nav ul li a {
+    color: #000000;
+    text-decoration: none;
+    font-size: 1.1rem;
+    transition: color 0.3s;
+}
+
+nav ul li a:hover,
+nav ul li a:active {
+    color: #ffffff;
+}
+
+.nav-toggle {
+    display: none;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: #000000;
+    padding: 2rem;
+    transition: color 0.3s;
+}
+
+.nav-toggle:hover,
+.nav-toggle:active {
+    color: #ffffff;
 }
 
 .overlay {
@@ -50,78 +75,37 @@ nav ul.active {
     z-index: 999;
 }
 
-/* Efecto hover para los elementos del menú */
-nav ul li a {
-    color: #000000;
-    text-decoration: none;
-    font-size: 1.1rem;
-    transition: color 0.3s ease; /* Añadido para suavizar la transición */
+.profile-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
 }
 
-nav ul li a:hover,
-nav ul li a:active {
-    color: #ffffff;
-}
-
-.nav-toggle {
-    display: none; /* Oculto por defecto */
-    cursor: pointer;
-    background: none;
-    border: none;
-    color: #000000;
-    padding: 2rem;
-    transition: color 0.3s ease; /* Transición para el efecto hover */
-}
-
-.nav-toggle:hover,
-.nav-toggle:active {
-    color: #ffffff; /* Cambio a color blanco en hover y active */
-}
-
-/* Ajustes para pantallas grandes */
-@media (min-width: 901px) {
-    .nav-toggle {
-        display: none !important; /* Aseguramos que esté oculto en pantallas grandes */
-    }
-
-    nav ul {
-        display: flex !important; /* Aseguramos que el menú siempre esté visible en pantallas grandes */
-    }
-}
-
+/* Ajustes para pantallas pequeñas */
 @media (max-width: 900px) {
     header {
         padding: 0;
         position: relative;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
     }
 
     .logo a {
         padding: 2rem;
-        color: #000000;
-        text-decoration: none;
-        font-size: 400%; /* Aumentar tamaño del título */
-        font-weight: bold;
+        font-size: 2rem;
     }
 
     .nav-toggle {
-        display: block; /* Mostramos el botón en pantallas pequeñas */
+        display: block;
     }
 
     nav ul {
-        display: flex;
         flex-direction: column;
-        justify-content: space-between; /* Distribuye los elementos verticalmente */
-        align-items: stretch; /* Estira los elementos horizontalmente */
         position: fixed;
         top: 0;
         right: -100%;
         width: 70%;
         height: 100%;
         background-color: #4d7cff;
-        padding: 2rem 1rem; /* Reducido el padding horizontal */
+        padding: 2rem 1rem;
         transition: right 0.3s ease;
         z-index: 1000;
     }
@@ -131,35 +115,25 @@ nav ul li a:active {
     }
 
     nav ul li {
-        flex-grow: 1; /* Permite que los elementos crezcan */
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 1rem; /* Espacio entre elementos */
+        margin-bottom: 0.5rem;
     }
 
     nav ul li:last-child {
-        margin-bottom: 0; /* Elimina el margen del último elemento */
+        margin-bottom: 0;
     }
 
     nav ul li a {
-        width: 100%; /* Ocupa todo el ancho disponible */
-        padding: 1rem 0.5rem; /* Aumenta el área clickeable */
+        width: 50%;
+        padding: 1rem 0.5rem;
         text-align: center;
-        font-size: 4rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        font-size: 1.5rem;
     }
 
-    /* Ajuste para el ícono de perfil */
-    nav ul li a .material-icons.person {
-        font-size: 128px !important; /* Ajusta el tamaño del ícono */
-    }
-
-    /* Estilo para el botón de administrador */
-    #admin-panel a {
-        background-color: #ff4d4d; /* Color distintivo para el botón de admin */
-        border-radius: 5px; /* Bordes redondeados */
+    .profile-icon {
+        width: 96px !important;
+        height: 96px !important;
     }
 }
