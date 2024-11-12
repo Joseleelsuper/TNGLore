@@ -41,14 +41,14 @@ def create_app():
     from app.routes.main import main_bp
     from app.routes.admin import admin_bp
     from app.routes.chests import chest_bp
-    from app.routes.coleccion import colections_bp
+    from app.routes.coleccion import collections_bp
     from app.routes.perfil import perfil_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(chest_bp)
-    app.register_blueprint(colections_bp)
+    app.register_blueprint(collections_bp)
     app.register_blueprint(perfil_bp)
 
     return app

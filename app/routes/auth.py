@@ -16,6 +16,7 @@ from app.models.user import User
 from app import bcrypt, mongo
 import logging
 
+from app.utils.validation_utils import validate_user_input
 from app.utils.images import get_images
 
 # Permitir OAuth sin HTTPS en desarrollo
@@ -70,8 +71,13 @@ def register():
         email = request.form.get("email")
         password = request.form.get("password")
 
+        is_valid, error_message = validate_user_input(username, email, password)
+        if not is_valid:
+            flash(error_message, "error")
+            return redirect(url_for("auth.auth"))
+
         if mongo.users.find_one({"$or": [{"username": username}, {"email": email}]}):
-            flash("El usuario o email ya existe")
+            flash("El usuario o email ya existe", "error")
             return redirect(url_for("auth.auth"))
 
         hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
@@ -96,7 +102,7 @@ def register():
         return redirect(url_for("main.inicio"))
 
     except Exception as e:
-        flash("Error al registrar usuario")
+        flash("Error al registrar usuario", "error")
         return redirect(url_for("auth.auth"))
 
 

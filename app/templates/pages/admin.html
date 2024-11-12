@@ -5,16 +5,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ images['icons']['favicon'] }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <title>TNGLore - Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/pages/admin.js') }}" defer></script>
+    <title>TNGLore - Panel de Administrador</title>
 </head>
 <body>
-    <!-- Encabezado -->
     {% include 'components/header.html' %}
 
-    <!-- Contenido principal -->
-    <main>
-        <h1>Bienvenido a TNGLore</h1>
-        <!-- Agrega aquí el contenido que desees -->
+    <main class="admin-panel">
+        <h1>Panel de Administrador</h1>
+
+        <section id="cartas-section" class="admin-section">
+            <h2>Gestión de Cartas</h2>
+            <div id="cartas-list"></div>
+            <button id="nueva-carta-btn" class="admin-btn">Crear Nueva Carta</button>
+        </section>
+
+        <section id="colecciones-section" class="admin-section">
+            <h2>Gestión de Colecciones</h2>
+            <div id="colecciones-list"></div>
+            <button id="nueva-coleccion-btn" class="admin-btn">Crear Nueva Colección</button>
+        </section>
+
+        <section id="usuarios-section" class="admin-section">
+            <h2>Gestión de Usuarios</h2>
+            <div id="usuarios-list"></div>
+        </section>
     </main>
+
+    <!-- Modales para crear/editar cartas y colecciones -->
+    <div id="carta-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="carta-modal-title">Crear/Editar Carta</h2>
+            <form id="carta-form">
+                <input type="text" id="carta-nombre" name="nombre" placeholder="Nombre de la carta" required>
+                <textarea id="carta-descripcion" name="descripcion" placeholder="Descripción de la carta" required></textarea>
+                <select id="carta-rareza" name="rareza" required>
+                    <option value="">Seleccione rareza</option>
+                    <option value="comun">Común</option>
+                    <option value="rara">Rara</option>
+                    <option value="epica">Épica</option>
+                    <option value="legendaria">Legendaria</option>
+                </select>
+                <select id="carta-coleccion" name="coleccion" required>
+                    <option value="">Seleccione colección</option>
+                </select>
+                <input type="file" id="carta-imagen" name="imagen" accept="image/*" required>
+                <button type="submit" class="admin-btn">Guardar</button>
+                <button type="button" class="admin-btn cancel-btn">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="coleccion-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="coleccion-modal-title">Crear/Editar Colección</h2>
+            <form id="coleccion-form" enctype="multipart/form-data">
+                <input type="text" id="coleccion-nombre" name="nombre" placeholder="Nombre de la colección" required>
+                <textarea id="coleccion-descripcion" name="descripcion" placeholder="Descripción de la colección" required></textarea>
+                <input type="file" id="coleccion-imagen" name="imagen" accept="image/*" required>
+                <button type="submit" class="admin-btn">Guardar</button>
+                <button type="button" class="admin-btn cancel-btn">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="usuario-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="usuario-modal-title">Gestionar Usuario</h2>
+            <form id="usuario-form">
+                <input type="password" id="usuario-password" placeholder="Nueva contraseña">
+                <button type="submit" class="admin-btn">Cambiar Contraseña</button>
+                <button type="button" id="eliminar-usuario-btn" class="admin-btn delete-btn">Eliminar Usuario</button>
+                <button type="button" class="admin-btn cancel-btn">Cancelar</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

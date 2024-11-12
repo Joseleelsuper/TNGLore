@@ -3,15 +3,15 @@ from flask_login import login_required, current_user
 
 from app.utils.images import get_images
 
-colections_bp = Blueprint("colections", __name__)
+collections_bp = Blueprint("collections", __name__)
 
 
-@colections_bp.route("/mi-coleccion")
+@collections_bp.route("/mi-coleccion")
 @login_required
-def my_colections():
+def my_collections():
     return render_template("pages/mi-coleccion.html", user=current_user, images=get_images())
 
-@colections_bp.route("/colecciones")
+@collections_bp.route("/colecciones")
 @login_required
-def colections():
+def collections():
     return render_template("pages/colecciones.html", user=current_user, images=get_images())
