@@ -106,6 +106,7 @@ class User(UserMixin):
         return User(**user_data)
 
     def update_discord_info(self, discord_data, guilds_data):
+        self.discord_id = discord_data["id"]
         self.pfp = f"https://cdn.discordapp.com/avatars/{discord_data['id']}/{discord_data['avatar']}" if discord_data["avatar"] else None
         
         # Crear diccionario de coleccionables existentes

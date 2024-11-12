@@ -160,6 +160,7 @@ def discord_callback():
                 {"_id": existing_user._id},
                 {
                     "$set": {
+                        "discord_id": existing_user.discord_id,
                         "pfp": existing_user.pfp,
                         "guilds": existing_user.guilds,
                     }

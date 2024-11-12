@@ -7,6 +7,7 @@
     <link rel="icon" href="{{ images['icons']['favicon'] }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/perfil.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="{{ url_for('static', filename='js/pages/perfil.js') }}"></script>
     <title>TNGLore - Perfil</title>
 </head>
@@ -55,6 +56,16 @@
                 </div>
                 <button type="submit" class="btn">Actualizar Perfil</button>
             </form>
+            <div class="profile-actions">
+                <button id="logout-btn" class="btn btn-secondary">
+                    <i class="material-icons">logout</i>
+                    Cerrar Sesión
+                </button>
+                <button id="delete-account-btn" class="btn btn-danger">
+                    <i class="material-icons">delete_forever</i>
+                    Borrar Cuenta
+                </button>
+            </div>
         </div>
         <div class="top-servers">
             <h2>Top Servidores</h2>
@@ -78,5 +89,27 @@
             </div>
         </div>
     </main>
+
+    <div id="delete-account-modal" class="modal">
+        <div class="modal-content">
+            <h2>Borrar Cuenta</h2>
+            <p>Esta acción es irreversible. Por favor, confirma que deseas borrar tu cuenta.</p>
+            <form id="delete-account-form">
+                <div class="form-group">
+                    <label for="delete-password">Contraseña:</label>
+                    <input type="password" id="delete-password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="delete-confirm" required>
+                        <span class="checkmark"></span>
+                        Acepto que si borro la cuenta, mis cartas y cofres no son recuperables
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-danger">Borrar Cuenta</button>
+                <button type="button" id="cancel-delete" class="btn btn-secondary">Cancelar</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

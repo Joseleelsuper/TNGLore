@@ -1,8 +1,8 @@
 # perfil.py
 
 from bson.objectid import ObjectId
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
+from flask import Blueprint, jsonify, render_template, request, redirect, url_for, flash
+from flask_login import login_required, current_user, logout_user
 from app import bcrypt, mongo
 from app.utils.images import get_images
 
@@ -54,3 +54,24 @@ def perfil():
         return redirect(url_for('perfil.perfil'))
 
     return render_template('pages/perfil.html', current_user=current_user, images=get_images())
+
+@perfil_bp.route('/perfil/delete-account', methods=['POST'])
+@login_required
+def delete_account():
+    data = request.get_json()
+    password = data.get('password')
+
+    if not password:
+        return jsonify({'message': 'Se requiere la contraseña.'}), 400
+
+    # Verificar si la contraseña es correcta
+    if not current_user.check_password(password):
+        return jsonify({'message': 'Contraseña incorrecta.'}), 401
+
+    # Eliminar el usuario de la base de datos
+    mongo.users.delete_one({'_id': ObjectId(current_user._id)})
+
+    # Cerrar sesión del usuario
+    logout_user()
+
+    return jsonify({'message': 'Cuenta eliminada correctamente.'}), 200
