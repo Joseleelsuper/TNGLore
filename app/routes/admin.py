@@ -3,9 +3,9 @@ import base64
 import os
 
 
+from bson import json_util
 from flask import Blueprint, json, render_template, request, jsonify
 from flask_login import login_required, current_user
-from bson import json_util
 from bson.objectid import ObjectId
 from werkzeug.security import generate_password_hash
 
@@ -29,38 +29,77 @@ def admin_panel():
 @login_required
 @admin_required
 def api_cartas():
-    try:
-        cartas = list(mongo.collectables.find())
-        # Convertir ObjectId a string para cada carta
-        for carta in cartas:
-            carta['_id'] = str(carta['_id'])
-            carta['coleccion'] = str(carta['coleccion'])
-        
-        # Usar json_util para manejar tipos de datos de MongoDB
-        return json.dumps(cartas, default=json_util.default), 200, {'Content-Type': 'application/json'}
-    except Exception as e:
-        print(f"Error al obtener cartas: {str(e)}")
-        return jsonify({'error': 'Error interno del servidor'}), 500
+    if request.method == 'GET':
+        try:
+            cartas = list(mongo.collectables.find())
+            for carta in cartas:
+                carta['_id'] = str(carta['_id'])
+                # Obtener la información completa de la colección
+                if 'coleccion' in carta and carta['coleccion']:
+                    coleccion = mongo.collections.find_one({'_id': carta['coleccion']})
+                    if coleccion:
+                        carta['coleccion'] = {
+                            'id': str(coleccion['_id']),
+                            'nombre': coleccion['nombre'],
+                            'descripcion': coleccion.get('descripcion'),
+                            'image': coleccion.get('image')
+                        }
+                    else:
+                        carta['coleccion'] = {
+                            'id': None,
+                            'nombre': 'No asignada',
+                            'descripcion': None,
+                            'image': None
+                        }
+                else:
+                    carta['coleccion'] = {
+                        'id': None,
+                        'nombre': 'No asignada',
+                        'descripcion': None,
+                        'image': None
+                    }
+            return json.dumps(cartas, default=json_util.default), 200, {'Content-Type': 'application/json'}
+        except Exception as e:
+            print(f"Error al obtener cartas: {str(e)}")
+            return jsonify({'error': 'Error interno del servidor'}), 500
 
-@admin_bp.route("/api/cartas/<id>", methods=['GET', 'PUT', 'DELETE'])
+@admin_bp.route("/api/cartas/<id>", methods=['GET'])
 @login_required
 @admin_required
-def api_carta(id):
-    if request.method == 'GET':
+def obtener_carta(id):
+    try:
         carta = mongo.collectables.find_one({'_id': ObjectId(id)})
-        return jsonify({**carta, '_id': str(carta['_id']), 'coleccion': str(carta['coleccion'])})
-    elif request.method == 'PUT':
-        updates = {
-            'nombre': request.form.get('nombre'),
-            'descripcion': request.form.get('descripcion'),
-            'rareza': request.form.get('rareza'),
-            'coleccion': ObjectId(request.form.get('coleccion'))
-        }
-        mongo.collectables.update_one({'_id': ObjectId(id)}, {'$set': updates})
-        return jsonify({'message': 'Carta actualizada'})
-    elif request.method == 'DELETE':
-        mongo.collectables.delete_one({'_id': ObjectId(id)})
-        return jsonify({'message': 'Carta eliminada'})
+        if carta:
+            carta['_id'] = str(carta['_id'])
+            # Obtener la información completa de la colección
+            if 'coleccion' in carta and carta['coleccion']:
+                coleccion = mongo.collections.find_one({'_id': carta['coleccion']})
+                if coleccion:
+                    carta['coleccion'] = {
+                        'id': str(coleccion['_id']),
+                        'nombre': coleccion['nombre'],
+                        'descripcion': coleccion.get('descripcion'),
+                        'image': coleccion.get('image')
+                    }
+                else:
+                    carta['coleccion'] = {
+                        'id': None,
+                        'nombre': 'No asignada',
+                        'descripcion': None,
+                        'image': None
+                    }
+            else:
+                carta['coleccion'] = {
+                    'id': None,
+                    'nombre': 'No asignada',
+                    'descripcion': None,
+                    'image': None
+                }
+            return jsonify(carta)
+        return jsonify({'error': 'Carta no encontrada'}), 404
+    except Exception as e:
+        print(f"Error al obtener carta: {str(e)}")
+        return jsonify({'error': 'Error interno del servidor'}), 500
 
 def serialize_object_id(obj):
     if isinstance(obj, ObjectId):
