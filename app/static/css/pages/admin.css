@@ -141,6 +141,11 @@
     width: 100%;
     height: auto;
     object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+.overlay-image-container img:hover {
+    transform: scale(1.05);
 }
 
 .overlay-details {
