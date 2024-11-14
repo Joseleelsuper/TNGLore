@@ -49,9 +49,11 @@ async function abrirModal(tipo, id = null) {
 
     if (id) {
         titulo.textContent = `Editar ${tipo}`;
+        form.setAttribute('data-id', id);
         await cargarDatosExistentes(tipo, id);
     } else {
         titulo.textContent = `Crear nueva ${tipo}`;
+        form.removeAttribute('data-id');
         form.reset();
     }
 
@@ -72,6 +74,7 @@ async function cargarColeccionesEnSelect() {
         });
     } catch (error) {
         console.error('Error al cargar colecciones:', error);
+        alert('Error al cargar las colecciones. Por favor, recarga la página.');
     }
 }
 
@@ -255,20 +258,61 @@ function crearElementoUsuario(usuario) {
 
 async function manejarSubmitCarta(event) {
     event.preventDefault();
-    const formData = new FormData(event.target);
-    const cartaId = formData.get('id');
+    const form = event.target;
+    const formData = new FormData(form);
+    const cartaId = form.getAttribute('data-id');
     const url = cartaId ? `/api/cartas/${cartaId}` : '/api/cartas';
     const method = cartaId ? 'PUT' : 'POST';
 
+    // Asegurarnos de que tenemos un valor válido para la colección
+    const coleccionId = form.querySelector('[name="coleccion"]').value;
+    if (!coleccionId) {
+        alert('Por favor, selecciona una colección para la carta.');
+        return;
+    }
+    formData.set('coleccion', coleccionId);
+
+    // Verificar si se ha seleccionado una nueva imagen
+    const imageFile = formData.get('imagen');
+    const hasNewImage = imageFile && imageFile.size > 0;
+
+    // Si no hay nueva imagen, eliminar el campo 'imagen' del FormData
+    if (!hasNewImage) {
+        formData.delete('imagen');
+    }
+
+    console.log('Datos a enviar:', Object.fromEntries(formData));
+
     try {
-        const data = await fetchDataWithFormData(url, method, formData);
-        if (data) {
-            await subirImagen(formData, 'carta', data.id || cartaId);
+        const response = await fetch(url, {
+            method: method,
+            body: formData
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            throw new Error(responseData.error || `Error ${response.status}: ${response.statusText}`);
+        }
+
+        console.log('Respuesta del servidor:', responseData);
+
+        if (responseData && (responseData.id || cartaId)) {
+            const cartaIdFinal = responseData.id || cartaId;
+            if (hasNewImage) {
+                console.log('Subiendo nueva imagen...');
+                await subirImagen(formData, 'carta', cartaIdFinal);
+                console.log('Nueva imagen subida exitosamente');
+            } else {
+                console.log('No se proporcionó nueva imagen, manteniendo la existente');
+            }
             cerrarModal();
-            cargarCartas();
+            await cargarCartas();
+        } else {
+            throw new Error('No se recibió un ID válido del servidor');
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error al guardar la carta:', error);
         alert('Error al guardar la carta: ' + error.message);
     }
 }
@@ -345,11 +389,16 @@ async function cargarDatosExistentes(tipo, id) {
     try {
         const data = await fetchData(`/api/${tipo}s/${id}`);
         const form = document.getElementById(`${tipo}-form`);
-        form.setAttribute('data-id', id);
+        console.log('Datos cargados:', data);  // Imprimir los datos cargados
         Object.keys(data).forEach(key => {
             const input = form.elements[key];
             if (input) {
-                input.value = data[key];
+                if (input.type === 'select-one' && key === 'coleccion') {
+                    input.value = data[key].id || data[key];
+                } else {
+                    input.value = data[key];
+                }
+                console.log(`Configurando ${key}:`, input.value);  // Imprimir cada valor configurado
             }
         });
     } catch (error) {
@@ -375,7 +424,9 @@ async function abrirOverlayCarta(carta) {
         <span class="close-btn">&times;</span>
         <div class="overlay-main">
             <div class="overlay-image-container">
-                <img src="${carta.image || '/static/images/placeholder-card.png'}" alt="${carta.nombre}" style="max-height: 400px; width: auto;">
+                <a href="${carta.image || '/static/images/placeholder-card.png'}" target="_blank">
+                    <img src="${carta.image || '/static/images/placeholder-card.png'}" alt="${carta.nombre}" style="max-height: 400px; width: auto;">
+                </a>
             </div>
             <div class="overlay-details">
                 <h2>${carta.nombre}</h2>
@@ -400,7 +451,7 @@ async function abrirOverlayCarta(carta) {
     if (carta.coleccion && carta.coleccion.id) {
         const coleccionContainer = document.getElementById('coleccion-container');
         coleccionContainer.innerHTML = `
-            <div class="overlay-card" onclick="abrirOverlayColeccion(${JSON.stringify(carta.coleccion).replace(/"/g, '&quot;')})">
+            <div class="overlay-card" onclick="abrirOverlayColeccion('${carta.coleccion.id}')">
                 <img src="${carta.coleccion.image || '/static/images/placeholder-collection.png'}" alt="${carta.coleccion.nombre}">
                 <p>${carta.coleccion.nombre}</p>
             </div>
@@ -424,33 +475,49 @@ async function abrirOverlayCarta(carta) {
     document.querySelector('.close-btn').onclick = cerrarOverlay;
 }
 
+async function obtenerColeccionCompleta(id) {
+    try {
+        const response = await fetch(`/api/colecciones/${id}`);
+        if (!response.ok) {
+            throw new Error('No se pudo obtener la información de la colección');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error al obtener la colección:', error);
+        return null;
+    }
+}
+
 async function abrirOverlayColeccion(coleccion) {
     const overlay = document.getElementById('overlay');
     const overlayContent = document.querySelector('.overlay-content');
     
-    // Asegurarse de que coleccion sea un objeto y no una cadena JSON
-    if (typeof coleccion === 'string') {
-        try {
-            coleccion = JSON.parse(coleccion);
-        } catch (e) {
-            console.error('Error al parsear datos de la colección:', e);
-            return;
-        }
+    // Asegurarse de que tenemos el ID de la colección
+    const coleccionId = typeof coleccion === 'string' ? coleccion : coleccion.id || coleccion._id;
+
+    // Obtener los datos completos de la colección
+    const coleccionCompleta = await obtenerColeccionCompleta(coleccionId);
+
+    if (!coleccionCompleta) {
+        console.error('No se pudo obtener la información completa de la colección');
+        return;
     }
 
     overlayContent.innerHTML = `
         <span class="close-btn">&times;</span>
         <div class="overlay-main">
             <div class="overlay-image-container">
-                <img src="${coleccion.image || '/static/images/placeholder-collection.png'}" alt="${coleccion.nombre}" style="max-height: 400px; width: auto;">
+                <a href="${coleccionCompleta.image || '/static/images/placeholder-collection.png'}" target="_blank">
+                    <img src="${coleccionCompleta.image || '/static/images/placeholder-collection.png'}" alt="${coleccionCompleta.nombre}" style="max-height: 400px; width: auto;">
+                </a>
             </div>
             <div class="overlay-details">
-                <h2>${coleccion.nombre}</h2>
-                <p><strong>Descripción:</strong> ${coleccion.descripcion || 'Sin descripción'}</p>
+                <h2>${coleccionCompleta.nombre}</h2>
+                <p><strong>Descripción:</strong> ${coleccionCompleta.descripcion || 'Sin descripción'}</p>
             </div>
         </div>
         <div class="overlay-section">
-            <h3>Cartas de la Colección ${coleccion.nombre}</h3>
+            <h3>Cartas de la Colección ${coleccionCompleta.nombre}</h3>
             <div class="overlay-cards" id="cartas-coleccion-container"></div>
         </div>
         <div class="overlay-section">
@@ -462,7 +529,7 @@ async function abrirOverlayColeccion(coleccion) {
     overlay.style.display = 'block';
 
     // Cargar cartas de la colección
-    const cartasColeccion = await obtenerCartasColeccion(coleccion.id);
+    const cartasColeccion = await obtenerCartasColeccion(coleccionCompleta._id);
     const cartasColeccionContainer = document.getElementById('cartas-coleccion-container');
     cartasColeccionContainer.innerHTML = cartasColeccion.map(c => `
         <div class="overlay-card" onclick="abrirOverlayCarta(${JSON.stringify(c).replace(/"/g, '&quot;')})">
@@ -472,14 +539,16 @@ async function abrirOverlayColeccion(coleccion) {
     `).join('');
 
     // Cargar otras colecciones
-    const otrasColecciones = await obtenerOtrasColecciones(coleccion.id);
+    const otrasColecciones = await obtenerOtrasColecciones(coleccionCompleta._id);
     const otrasColeccionesContainer = document.getElementById('otras-colecciones-container');
-    otrasColeccionesContainer.innerHTML = otrasColecciones.map(c => `
-        <div class="overlay-card" onclick="abrirOverlayColeccion(${JSON.stringify(c).replace(/"/g, '&quot;')})">
-            <img src="${c.image || '/static/images/placeholder-collection.png'}" alt="${c.nombre}">
-            <p>${c.nombre}</p>
-        </div>
-    `).join('');
+    otrasColeccionesContainer.innerHTML = otrasColecciones
+        .filter(c => c._id !== coleccionCompleta._id)
+        .map(c => `
+            <div class="overlay-card" onclick="abrirOverlayColeccion('${c._id}')">
+                <img src="${c.image || '/static/images/placeholder-collection.png'}" alt="${c.nombre}">
+                <p>${c.nombre}</p>
+            </div>
+        `).join('');
 
     document.querySelector('.close-btn').onclick = cerrarOverlay;
 }
@@ -523,16 +592,21 @@ async function fetchData(url, method = 'GET', body = null) {
 }
 
 async function fetchDataWithFormData(url, method, formData) {
-    const response = await fetch(url, {
-        method,
-        body: formData
-    });
+    try {
+        const response = await fetch(url, {
+            method,
+            body: formData
+        });
 
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error en la solicitud');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error en fetchDataWithFormData:', error);
+        throw error;
     }
-    return await response.json();
 }
 
 async function subirImagen(formData, tipo, id) {
@@ -543,14 +617,23 @@ async function subirImagen(formData, tipo, id) {
         imageFormData.append('tipo', tipo);
         imageFormData.append('id', id);
 
-        const response = await fetch('/api/upload-image', {
-            method: 'POST',
-            body: imageFormData
-        });
+        try {
+            const response = await fetch('/api/upload-image', {
+                method: 'POST',
+                body: imageFormData
+            });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Error al subir la imagen');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('Imagen subida:', data);
+            return data.url;
+        } catch (error) {
+            console.error('Error al subir la imagen:', error);
+            throw error;
         }
     }
 }

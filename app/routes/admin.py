@@ -4,7 +4,7 @@ import os
 
 
 from bson import json_util
-from flask import Blueprint, json, render_template, request, jsonify
+from flask import Blueprint, current_app, json, render_template, request, jsonify
 from flask_login import login_required, current_user
 from bson.objectid import ObjectId
 from werkzeug.security import generate_password_hash
@@ -16,6 +16,7 @@ from app.utils.images import get_images
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 GITHUB_REPO = os.environ.get('GITHUB_REPO')
 GITHUB_API_URL = f'https://api.github.com/repos/{GITHUB_REPO}/contents'
+GITHUB_BRANCH = os.environ.get('GITHUB_BRANCH', 'main')
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -133,18 +134,80 @@ def obtener_colecciones():
 @admin_required
 def crear_carta():
     try:
+        coleccion_id = request.form.get('coleccion')
+        if not coleccion_id:
+            return jsonify({'error': 'El ID de la colección es requerido'}), 400
+
         nueva_carta = {
             'nombre': request.form.get('nombre'),
             'descripcion': request.form.get('descripcion'),
             'rareza': request.form.get('rareza'),
-            'coleccion': ObjectId(request.form.get('coleccion')),
+            'coleccion': ObjectId(coleccion_id),
             'image': None  # Se actualizará después de subir la imagen
         }
+        
+        # Validación de datos
+        if not nueva_carta['nombre'] or not nueva_carta['rareza']:
+            return jsonify({'error': 'Faltan campos requeridos'}), 400
+        
+        # Verificar si la colección existe
+        coleccion = mongo.collections.find_one({'_id': nueva_carta['coleccion']})
+        if not coleccion:
+            return jsonify({'error': 'La colección especificada no existe'}), 400
+        
         result = mongo.collectables.insert_one(nueva_carta)
         return jsonify({'message': 'Carta creada', 'id': str(result.inserted_id)}), 201
+    except ValueError as ve:
+        return jsonify({'error': f'ID de colección inválido: {str(ve)}'}), 400
     except Exception as e:
         print(f"Error al crear carta: {str(e)}")
-        return jsonify({'error': 'Error interno del servidor'}), 500
+        return jsonify({'error': f'Error interno del servidor: {str(e)}'}), 500
+    
+@admin_bp.route("/api/cartas/<id>", methods=['PUT'])
+@login_required
+@admin_required
+def actualizar_carta(id):
+    try:
+        carta = mongo.collectables.find_one({'_id': ObjectId(id)})
+        if not carta:
+            return jsonify({'error': 'Carta no encontrada'}), 404
+
+        # Crear un diccionario con los campos a actualizar
+        updates = {}
+        if 'nombre' in request.form:
+            updates['nombre'] = request.form.get('nombre')
+        if 'descripcion' in request.form:
+            updates['descripcion'] = request.form.get('descripcion')
+        if 'rareza' in request.form:
+            updates['rareza'] = request.form.get('rareza')
+        if 'coleccion' in request.form:
+            coleccion_id = request.form.get('coleccion')
+            if coleccion_id:
+                try:
+                    updates['coleccion'] = ObjectId(coleccion_id)
+                except:
+                    return jsonify({'error': f'ID de colección inválido: {coleccion_id}'}), 400
+
+        # Imprimir los datos recibidos y las actualizaciones para depuración
+        current_app.logger.info(f"Datos recibidos: {request.form}")
+        current_app.logger.info(f"Actualizaciones a realizar: {updates}")
+
+        # Actualizar solo los campos proporcionados
+        if updates:
+            result = mongo.collectables.update_one({'_id': ObjectId(id)}, {'$set': updates})
+            if result.modified_count == 0:
+                # Verificar si la carta existe pero no se modificó
+                if mongo.collectables.find_one({'_id': ObjectId(id)}):
+                    return jsonify({'message': 'No se realizaron cambios en la carta', 'id': id}), 200
+                else:
+                    return jsonify({'error': 'No se pudo actualizar la carta'}), 400
+            return jsonify({'message': 'Carta actualizada', 'id': id}), 200
+        else:
+            return jsonify({'message': 'No se proporcionaron cambios', 'id': id}), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error al actualizar carta: {str(e)}", exc_info=True)
+        return jsonify({'error': f'Error interno del servidor: {str(e)}'}), 500
 
 @admin_bp.route("/api/colecciones", methods=['POST'])
 @login_required
@@ -248,7 +311,7 @@ def upload_image_to_github(image_data, path):
     }
     response = requests.put(f'{GITHUB_API_URL}/{path}', headers=headers, json=data)
     if response.status_code == 201:
-        return f'https://cdn.jsdelivr.net/gh/{GITHUB_REPO}@main/{path}'
+        return f'https://cdn.jsdelivr.net/gh/{GITHUB_REPO}@{GITHUB_BRANCH}/{path}'
     else:
         raise Exception(f'Failed to upload image: {response.text}')
 
@@ -266,26 +329,40 @@ def upload_image():
     if tipo not in ['coleccion', 'carta']:
         return jsonify({'error': 'Tipo inválido'}), 400
     
-    if tipo == 'coleccion':
-        coleccion = mongo.collections.find_one({'_id': ObjectId(id)})
-        if not coleccion:
-            return jsonify({'error': 'Colección no encontrada'}), 404
-        path = f'app/static/assets/collections/{coleccion["nombre"]}/image/{id}.{image.filename.split(".")[-1]}'
-    else:
-        carta = mongo.collectables.find_one({'_id': ObjectId(id)})
-        if not carta:
-            return jsonify({'error': 'Carta no encontrada'}), 404
-        coleccion = mongo.collections.find_one({'_id': carta['coleccion']})
-        path = f'app/static/assets/collections/{coleccion["nombre"]}/cards/{id}.{image.filename.split(".")[-1]}'
-    
     try:
+        if tipo == 'coleccion':
+            coleccion = mongo.collections.find_one({'_id': ObjectId(id)})
+            if not coleccion:
+                return jsonify({'error': 'Colección no encontrada'}), 404
+            path = f'app/static/assets/collections/{coleccion["nombre"]}/image/{id}.{image.filename.split(".")[-1]}'
+        else:
+            carta = mongo.collectables.find_one({'_id': ObjectId(id)})
+            if not carta:
+                return jsonify({'error': 'Carta no encontrada'}), 404
+            coleccion = mongo.collections.find_one({'_id': carta['coleccion']})
+            path = f'app/static/assets/collections/{coleccion["nombre"]}/cards/{id}.{image.filename.split(".")[-1]}'
+        
+        # Eliminar la imagen anterior si existe
+        borrado = delete_from_github(path)
+
+        if not borrado:
+            current_app.logger.error(f"Error al borrar imagen: {path}")
+
+        current_app.logger.info(f"Subiendo imagen a {path}")
+        
+        # Subir la nueva imagen
         image_url = upload_image_to_github(image.read(), path)
+        image_url = image_url.replace('@development', '@main')
+        
+        # Actualizar la URL de la imagen en la base de datos
         if tipo == 'coleccion':
             mongo.collections.update_one({'_id': ObjectId(id)}, {'$set': {'image': image_url}})
         else:
             mongo.collectables.update_one({'_id': ObjectId(id)}, {'$set': {'image': image_url}})
+        
         return jsonify({'message': 'Imagen subida exitosamente', 'url': image_url})
     except Exception as e:
+        current_app.logger.error(f"Error al subir imagen: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
     
 def delete_from_github(path):
