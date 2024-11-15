@@ -3,8 +3,6 @@ import {
     cargarCartas,
     crearElementoColeccion,
     crearElementoCarta,
-    abrirOverlayColeccion,
-    abrirOverlayCarta,
     cerrarOverlay
 } from '../utils/shared.js';
 
@@ -20,9 +18,6 @@ async function loadInitialData() {
     try {
         const colecciones = await cargarColecciones();
         const cartas = await cargarCartas();
-        
-        console.log('Colecciones cargadas:', colecciones);
-        console.log('Cartas cargadas:', cartas);
 
         const contenedorColecciones = document.getElementById('contenedor-colecciones');
         contenedorColecciones.innerHTML = ''; // Limpiar el contenedor
