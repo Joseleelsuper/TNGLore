@@ -27,8 +27,8 @@ def admin_panel():
     return render_template("pages/admin.html", user=current_user, images=get_images())
 
 @admin_bp.route("/api/cartas", methods=['GET'])
+@admin_bp.route("/api/cartas", methods=['GET'])
 @login_required
-@admin_required
 def api_cartas():
     if request.method == 'GET':
         try:
@@ -120,7 +120,6 @@ def obtener_cartas():
     
 @admin_bp.route("/api/colecciones", methods=['GET'])
 @login_required
-@admin_required
 def obtener_colecciones():
     try:
         colecciones = list(mongo.collections.find())

@@ -6,9 +6,9 @@
     <link rel="icon" href="{{ images['icons']['favicon'] }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin.css') }}">
-    <script type="module" src="{{ url_for('static', filename='js/shared.js') }}"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="{{ url_for('static', filename='js/pages/admin.js') }}" defer></script>
+    <script type="module" src="{{ url_for('static', filename='js/utils/shared.js') }}"></script>
     <title>TNGLore - Panel de Administrador</title>
 </head>
 <body>
@@ -21,6 +21,7 @@
             <h2>Gestión de Cartas</h2>
             <div class="section-header">
                 <select id="cartas-sort" class="sort-dropdown">
+                    <option value="" selected disabled>Ordenar por...</option>
                     <option value="nombre">Ordenar por Nombre</option>
                     <option value="rareza">Ordenar por Rareza</option>
                     <option value="coleccion">Ordenar por Colección</option>
@@ -34,6 +35,7 @@
             <h2>Gestión de Colecciones</h2>
             <div class="section-header">
                 <select id="colecciones-sort" class="sort-dropdown">
+                    <option value="" selected disabled>Ordenar por...</option>
                     <option value="nombre">Ordenar por Nombre</option>
                 </select>
             </div>
@@ -45,6 +47,7 @@
             <h2>Gestión de Usuarios</h2>
             <div class="section-header">
                 <select id="usuarios-sort" class="sort-dropdown">
+                    <option value="" selected disabled>Ordenar por...</option>
                     <option value="nombre">Ordenar por Nombre de Usuario</option>
                     <option value="cartas">Ordenar por Número de Cartas</option>
                     <option value="cofres">Ordenar por Número de Cofres</option>

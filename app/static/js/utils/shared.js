@@ -1,3 +1,4 @@
+// Funciones de utilidad básicas
 async function fetchData(url, method = 'GET', body = null) {
     const options = {
         method,
@@ -36,7 +37,16 @@ async function cargarCartas() {
     }
 }
 
-function crearElementoCarta(carta, onClick) {
+async function obtenerCartasColeccion(coleccionId) {
+    return await fetchData(`/api/cartas?coleccion=${coleccionId}`);
+}
+
+async function obtenerOtrasColecciones(coleccionId) {
+    const colecciones = await fetchData('/api/colecciones');
+    return colecciones.filter(c => c._id !== coleccionId);
+}
+
+function crearElementoCarta(carta) {
     const div = document.createElement('div');
     div.className = 'card carta-card';
     div.dataset.carta = JSON.stringify(carta);
@@ -49,14 +59,10 @@ function crearElementoCarta(carta, onClick) {
             <p class="card-rarity">Rareza: ${carta.rareza}</p>
         </div>
     `;
-    div.querySelector('.card-image-container').addEventListener('click', (e) => {
-        e.stopPropagation();
-        onClick(carta);
-    });
     return div;
 }
 
-function crearElementoColeccion(coleccion, onClick) {
+function crearElementoColeccion(coleccion) {
     const div = document.createElement('div');
     div.className = 'card coleccion-card';
     div.dataset.coleccion = JSON.stringify(coleccion);
@@ -68,22 +74,31 @@ function crearElementoColeccion(coleccion, onClick) {
             <h3 class="card-title">${coleccion.nombre}</h3>
         </div>
     `;
-    div.querySelector('.card-image-container').addEventListener('click', (e) => {
-        e.stopPropagation();
-        onClick(coleccion);
-    });
     return div;
 }
 
 async function abrirOverlayCarta(carta) {
+    console.log('Carta recibida en abrirOverlayCarta:', carta);
     const overlay = document.getElementById('overlay');
     const overlayContent = document.querySelector('.overlay-content');
-    
+
+    // Asegurarse de que carta sea un objeto
+    if (typeof carta === 'string') {
+        try {
+            carta = JSON.parse(carta);
+        } catch (e) {
+            console.error('Error al parsear datos de la carta:', e);
+            return;
+        }
+    }
+
     overlayContent.innerHTML = `
         <span class="close-btn">&times;</span>
         <div class="overlay-main">
             <div class="overlay-image-container">
-                <img src="${carta.image || '/static/images/placeholder-card.png'}" alt="${carta.nombre}" style="max-height: 400px; width: auto;">
+                <a href="${carta.image || '/static/images/placeholder-card.png'}" target="_blank">
+                    <img src="${carta.image || '/static/images/placeholder-card.png'}" alt="${carta.nombre}" style="max-height: 400px; width: auto;">
+                </a>
             </div>
             <div class="overlay-details">
                 <h2>${carta.nombre}</h2>
@@ -104,21 +119,24 @@ async function abrirOverlayCarta(carta) {
 
     overlay.style.display = 'block';
 
-    if (carta.coleccion && carta.coleccion.id) {
+    // Obtener el ID de la colección correctamente
+    const coleccionId = carta.coleccion ? (carta.coleccion._id || carta.coleccion.id) : null;
+    
+    if (coleccionId) {
         const coleccionContainer = document.getElementById('coleccion-container');
         coleccionContainer.innerHTML = `
-            <div class="overlay-card" onclick="abrirOverlayColeccion('${carta.coleccion.id}')">
+            <div class="overlay-card" onclick="window.abrirOverlayColeccion(${JSON.stringify(carta.coleccion).replace(/"/g, '&quot;')})">
                 <img src="${carta.coleccion.image || '/static/images/placeholder-collection.png'}" alt="${carta.coleccion.nombre}">
                 <p>${carta.coleccion.nombre}</p>
             </div>
         `;
 
-        const cartasRelacionadas = await cargarCartas();
+        const cartasRelacionadas = await obtenerCartasColeccion(coleccionId);
         const cartasRelacionadasContainer = document.getElementById('cartas-relacionadas-container');
         cartasRelacionadasContainer.innerHTML = cartasRelacionadas
-            .filter(c => c.coleccion.id === carta.coleccion.id && c._id !== carta._id)
+            .filter(c => c._id !== carta._id)
             .map(c => `
-                <div class="overlay-card" onclick="abrirOverlayCarta(${JSON.stringify(c).replace(/"/g, '&quot;')})">
+                <div class="overlay-card" onclick="window.abrirOverlayCarta(${JSON.stringify(c).replace(/"/g, '&quot;')})">
                     <img src="${c.image || '/static/images/placeholder-card.png'}" alt="${c.nombre}">
                     <p>${c.nombre}</p>
                 </div>
@@ -131,35 +149,32 @@ async function abrirOverlayCarta(carta) {
 async function abrirOverlayColeccion(coleccion) {
     const overlay = document.getElementById('overlay');
     const overlayContent = document.querySelector('.overlay-content');
-    
-    const coleccionCompleta = typeof coleccion === 'string' 
-        ? await fetchData(`/api/colecciones/${coleccion}`)
-        : coleccion;
 
     overlayContent.innerHTML = `
         <span class="close-btn">&times;</span>
         <div class="overlay-main">
             <div class="overlay-image-container">
-                <img src="${coleccionCompleta.image || '/static/images/placeholder-collection.png'}" alt="${coleccionCompleta.nombre}" style="max-height: 400px; width: auto;">
+                <a href="${coleccion.image || '/static/images/placeholder-collection.png'}" target="_blank">
+                    <img src="${coleccion.image || '/static/images/placeholder-collection.png'}" alt="${coleccion.nombre}" style="max-height: 200px; width: auto;">
+                </a>
             </div>
             <div class="overlay-details">
-                <h2>${coleccionCompleta.nombre}</h2>
-                <p><strong>Descripción:</strong> ${coleccionCompleta.descripcion || 'Sin descripción'}</p>
+                <h2>${coleccion.nombre}</h2>
+                <p><strong>Descripción:</strong> ${coleccion.descripcion || 'Sin descripción'}</p>
             </div>
         </div>
         <div class="overlay-section">
-            <h3>Cartas de la Colección ${coleccionCompleta.nombre}</h3>
+            <h3>Cartas de la Colección ${coleccion.nombre}</h3>
             <div class="overlay-cards" id="cartas-coleccion-container"></div>
         </div>
     `;
 
     overlay.style.display = 'block';
 
-    const cartas = await cargarCartas();
-    const cartasColeccion = cartas.filter(c => c.coleccion.id === coleccionCompleta._id);
+    const cartasColeccion = await obtenerCartasColeccion(coleccion._id);
     const cartasColeccionContainer = document.getElementById('cartas-coleccion-container');
     cartasColeccionContainer.innerHTML = cartasColeccion.map(c => `
-        <div class="overlay-card" onclick="abrirOverlayCarta(${JSON.stringify(c).replace(/"/g, '&quot;')})">
+        <div class="overlay-card" onclick="window.abrirOverlayCarta(${JSON.stringify(c).replace(/"/g, '&quot;')})">
             <img src="${c.image || '/static/images/placeholder-card.png'}" alt="${c.nombre}">
             <p>${c.nombre}</p>
         </div>
@@ -180,5 +195,12 @@ export {
     crearElementoColeccion,
     abrirOverlayCarta,
     abrirOverlayColeccion,
-    cerrarOverlay
+    cerrarOverlay,
+    obtenerCartasColeccion,
+    obtenerOtrasColecciones
 };
+
+// Hacer las funciones de overlay disponibles globalmente
+window.abrirOverlayCarta = abrirOverlayCarta;
+window.abrirOverlayColeccion = abrirOverlayColeccion;
+window.cerrarOverlay = cerrarOverlay;
