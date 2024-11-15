@@ -16,7 +16,7 @@ from app.utils.images import get_images
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 GITHUB_REPO = os.environ.get('GITHUB_REPO')
 GITHUB_API_URL = f'https://api.github.com/repos/{GITHUB_REPO}/contents'
-GITHUB_BRANCH = os.environ.get('GITHUB_BRANCH', 'main')
+GITHUB_BRANCH = os.environ.get('GITHUB_BRANCH', 'development')
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -27,8 +27,8 @@ def admin_panel():
     return render_template("pages/admin.html", user=current_user, images=get_images())
 
 @admin_bp.route("/api/cartas", methods=['GET'])
+@admin_bp.route("/api/cartas", methods=['GET'])
 @login_required
-@admin_required
 def api_cartas():
     if request.method == 'GET':
         try:
@@ -120,7 +120,6 @@ def obtener_cartas():
     
 @admin_bp.route("/api/colecciones", methods=['GET'])
 @login_required
-@admin_required
 def obtener_colecciones():
     try:
         colecciones = list(mongo.collections.find())
@@ -247,20 +246,38 @@ def api_coleccion(id):
             return jsonify({'error': 'Colección no encontrada'}), 404
         return jsonify({**coleccion, '_id': str(coleccion['_id'])})
     elif request.method == 'PUT':
-        nombre = request.form.get('nombre')
-        descripcion = request.form.get('descripcion')
-        
-        if not nombre or not descripcion:
-            return jsonify({'error': 'Nombre y descripción son requeridos'}), 400
-        
-        updates = {
-            'nombre': nombre,
-            'descripcion': descripcion
-        }
-        result = mongo.collections.update_one({'_id': ObjectId(id)}, {'$set': updates})
-        if result.modified_count == 0:
-            return jsonify({'error': 'No se pudo actualizar la colección'}), 400
-        return jsonify({'message': 'Colección actualizada'})
+        try:
+            coleccion = mongo.collections.find_one({'_id': ObjectId(id)})
+            if not coleccion:
+                return jsonify({'error': 'Colección no encontrada'}), 404
+
+            # Crear un diccionario con los campos a actualizar
+            updates = {}
+            if 'nombre' in request.form:
+                updates['nombre'] = request.form.get('nombre')
+            if 'descripcion' in request.form:
+                updates['descripcion'] = request.form.get('descripcion')
+
+            # Imprimir los datos recibidos y las actualizaciones para depuración
+            current_app.logger.info(f"Datos recibidos: {request.form}")
+            current_app.logger.info(f"Actualizaciones a realizar: {updates}")
+
+            # Actualizar solo los campos proporcionados
+            if updates:
+                result = mongo.collections.update_one({'_id': ObjectId(id)}, {'$set': updates})
+                if result.modified_count == 0:
+                    # Verificar si la colección existe pero no se modificó
+                    if mongo.collections.find_one({'_id': ObjectId(id)}):
+                        return jsonify({'message': 'No se realizaron cambios en la colección', 'id': id}), 200
+                    else:
+                        return jsonify({'error': 'No se pudo actualizar la colección'}), 400
+                return jsonify({'message': 'Colección actualizada', 'id': id}), 200
+            else:
+                return jsonify({'message': 'No se proporcionaron cambios', 'id': id}), 200
+
+        except Exception as e:
+            current_app.logger.error(f"Error al actualizar colección: {str(e)}", exc_info=True)
+            return jsonify({'error': f'Error interno del servidor: {str(e)}'}), 500
     elif request.method == 'DELETE':
         result = mongo.collections.delete_one({'_id': ObjectId(id)})
         if result.deleted_count == 0:
@@ -343,12 +360,7 @@ def upload_image():
             path = f'app/static/assets/collections/{coleccion["nombre"]}/cards/{id}.{image.filename.split(".")[-1]}'
         
         # Eliminar la imagen anterior si existe
-        borrado = delete_from_github(path)
-
-        if not borrado:
-            current_app.logger.error(f"Error al borrar imagen: {path}")
-
-        current_app.logger.info(f"Subiendo imagen a {path}")
+        delete_from_github(path)
         
         # Subir la nueva imagen
         image_url = upload_image_to_github(image.read(), path)

@@ -5,16 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ images['icons']['favicon'] }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/colecciones.css') }}">
+    <script type="module" src="{{ url_for('static', filename='js/pages/colecciones.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/utils/shared.js') }}"></script>
     <title>TNGLore - Colecciones</title>
 </head>
 <body>
-    <!-- Encabezado -->
     {% include 'components/header.html' %}
 
-    <!-- Contenido principal -->
-    <main>
-        <h1>Bienvenido a TNGLore</h1>
-        <!-- Agrega aquí el contenido que desees -->
+    <main class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8">Colecciones de TNGLore</h1>
+        <div id="contenedor-colecciones"></div>
     </main>
+
+    <!-- Overlay para mostrar detalles -->
+    <div id="overlay" class="overlay" style="display: none;">
+        <div class="overlay-content"></div>
+    </div>
+
 </body>
 </html>
