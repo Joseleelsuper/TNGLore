@@ -246,11 +246,12 @@ function crearElementoUsuario(usuario) {
     div.className = 'card usuario-card';
     div.dataset.usuario = JSON.stringify(usuario);
     const imagenPerfil = usuario.pfp || 'https://fonts.gstatic.com/s/i/materialicons/person/v6/24px.svg';
+    const numCartas = usuario.guilds.reduce((total, guild) => total + (guild.coleccionables ? guild.coleccionables.length : 0), 0);
     div.innerHTML = `
         <img src="${imagenPerfil}" alt="Imagen de perfil" class="usuario-pfp">
         <h3>${usuario.username}</h3>
-        <p>Cartas: ${usuario.numCartas}</p>
-        <p>Cofres: ${usuario.numCofres}</p>
+        <p>Cartas: ${numCartas || 0}</p>
+        <p>Cofres: ${usuario.chests.length || 0}</p>
         <button onclick="abrirModal('usuario', '${usuario._id}')" class="admin-btn gestionar-btn">Gestionar</button>
     `;
     return div;
@@ -325,15 +326,47 @@ async function manejarSubmitColeccion(event) {
     const url = coleccionId ? `/api/colecciones/${coleccionId}` : '/api/colecciones';
     const method = coleccionId ? 'PUT' : 'POST';
 
+    // Verificar si se ha seleccionado una nueva imagen
+    const imageFile = formData.get('imagen');
+    const hasNewImage = imageFile && imageFile.size > 0;
+
+    // Si no hay nueva imagen, eliminar el campo 'imagen' del FormData
+    if (!hasNewImage) {
+        formData.delete('imagen');
+    }
+
+    console.log('Datos a enviar:', Object.fromEntries(formData));
+
     try {
-        const data = await fetchDataWithFormData(url, method, formData);
-        if (data) {
-            await subirImagen(formData, 'coleccion', data.id || coleccionId);
+        const response = await fetch(url, {
+            method: method,
+            body: formData
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            throw new Error(responseData.error || `Error ${response.status}: ${response.statusText}`);
+        }
+
+        console.log('Respuesta del servidor:', responseData);
+
+        if (responseData && (responseData.id || coleccionId)) {
+            const coleccionIdFinal = responseData.id || coleccionId;
+            if (hasNewImage) {
+                console.log('Subiendo nueva imagen...');
+                await subirImagen(formData, 'coleccion', coleccionIdFinal);
+                console.log('Nueva imagen subida exitosamente');
+            } else {
+                console.log('No se proporcionó nueva imagen, manteniendo la existente');
+            }
             cerrarModal();
-            cargarColecciones();
+            await cargarColecciones();
+        } else {
+            throw new Error('No se recibió un ID válido del servidor');
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error al guardar la colección:', error);
         alert('Error al guardar la colección: ' + error.message);
     }
 }
@@ -387,7 +420,9 @@ function confirmarEliminarUsuario() {
 
 async function cargarDatosExistentes(tipo, id) {
     try {
-        const data = await fetchData(`/api/${tipo}s/${id}`);
+        // Corregimos la URL para que use el singular 'coleccion' en lugar de 'coleccions'
+        const url = tipo === 'coleccion' ? `/api/colecciones/${id}` : `/api/${tipo}s/${id}`;
+        const data = await fetchData(url);
         const form = document.getElementById(`${tipo}-form`);
         console.log('Datos cargados:', data);  // Imprimir los datos cargados
         Object.keys(data).forEach(key => {

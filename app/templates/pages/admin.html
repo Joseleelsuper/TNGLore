@@ -6,6 +6,7 @@
     <link rel="icon" href="{{ images['icons']['favicon'] }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin.css') }}">
+    <script type="module" src="{{ url_for('static', filename='js/shared.js') }}"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="{{ url_for('static', filename='js/pages/admin.js') }}" defer></script>
     <title>TNGLore - Panel de Administrador</title>
@@ -70,7 +71,7 @@
                 <select id="carta-coleccion" name="coleccion" required>
                     <option value="">Seleccione colección</option>
                 </select>
-                <input type="file" id="carta-imagen" name="imagen" accept="image/*" required>
+                <input type="file" id="carta-imagen" name="imagen" accept="image/*">
                 <button type="submit" class="admin-btn">Guardar</button>
                 <button type="button" class="admin-btn cancel-btn">Cancelar</button>
             </form>
@@ -83,7 +84,7 @@
             <form id="coleccion-form" enctype="multipart/form-data">
                 <input type="text" id="coleccion-nombre" name="nombre" placeholder="Nombre de la colección" required>
                 <textarea id="coleccion-descripcion" name="descripcion" placeholder="Descripción de la colección" required></textarea>
-                <input type="file" id="coleccion-imagen" name="imagen" accept="image/*" required>
+                <input type="file" id="coleccion-imagen" name="imagen" accept="image/*">
                 <button type="submit" class="admin-btn">Guardar</button>
                 <button type="button" class="admin-btn cancel-btn">Cancelar</button>
             </form>

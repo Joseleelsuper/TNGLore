@@ -249,6 +249,24 @@
 }
 
 @media (max-width: 768px) {
+    #cartas-list, #colecciones-list, #usuarios-list {
+        grid-template-columns: repeat(2, 1fr); /* 2 columnas en móvil */
+        gap: 10px;
+    }
+
+    .card {
+        width: 100%; /* Ocupar todo el ancho disponible */
+    }
+
+    .card-actions {
+        flex-direction: row; /* Mantener botones en línea */
+    }
+
+    .admin-btn {
+        padding: 6px 12px; /* Botones más pequeños en móvil */
+        font-size: 0.8em;
+    }
+
     .profile-layout {
         flex-direction: column;
         padding: 0;
@@ -328,6 +346,7 @@
 }
 
 @media (max-width: 480px) {
+    
     .top-servers, .perfil-container {
         padding: 1.5rem;
     }
