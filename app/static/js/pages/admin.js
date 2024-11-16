@@ -282,8 +282,6 @@ async function manejarSubmitCarta(event) {
         formData.delete('imagen');
     }
 
-    console.log('Datos a enviar:', Object.fromEntries(formData));
-
     try {
         const response = await fetch(url, {
             method: method,
@@ -296,16 +294,10 @@ async function manejarSubmitCarta(event) {
             throw new Error(responseData.error || `Error ${response.status}: ${response.statusText}`);
         }
 
-        console.log('Respuesta del servidor:', responseData);
-
         if (responseData && (responseData.id || cartaId)) {
             const cartaIdFinal = responseData.id || cartaId;
             if (hasNewImage) {
-                console.log('Subiendo nueva imagen...');
                 await subirImagen(formData, 'carta', cartaIdFinal);
-                console.log('Nueva imagen subida exitosamente');
-            } else {
-                console.log('No se proporcionó nueva imagen, manteniendo la existente');
             }
             cerrarModal();
             await cargarCartas();
@@ -335,8 +327,6 @@ async function manejarSubmitColeccion(event) {
         formData.delete('imagen');
     }
 
-    console.log('Datos a enviar:', Object.fromEntries(formData));
-
     try {
         const response = await fetch(url, {
             method: method,
@@ -349,16 +339,10 @@ async function manejarSubmitColeccion(event) {
             throw new Error(responseData.error || `Error ${response.status}: ${response.statusText}`);
         }
 
-        console.log('Respuesta del servidor:', responseData);
-
         if (responseData && (responseData.id || coleccionId)) {
             const coleccionIdFinal = responseData.id || coleccionId;
             if (hasNewImage) {
-                console.log('Subiendo nueva imagen...');
                 await subirImagen(formData, 'coleccion', coleccionIdFinal);
-                console.log('Nueva imagen subida exitosamente');
-            } else {
-                console.log('No se proporcionó nueva imagen, manteniendo la existente');
             }
             cerrarModal();
             await cargarColecciones();
@@ -424,7 +408,6 @@ async function cargarDatosExistentes(tipo, id) {
         const url = tipo === 'coleccion' ? `/api/colecciones/${id}` : `/api/${tipo}s/${id}`;
         const data = await fetchData(url);
         const form = document.getElementById(`${tipo}-form`);
-        console.log('Datos cargados:', data);  // Imprimir los datos cargados
         Object.keys(data).forEach(key => {
             const input = form.elements[key];
             if (input) {
@@ -433,7 +416,6 @@ async function cargarDatosExistentes(tipo, id) {
                 } else {
                     input.value = data[key];
                 }
-                console.log(`Configurando ${key}:`, input.value);  // Imprimir cada valor configurado
             }
         });
     } catch (error) {
@@ -664,7 +646,6 @@ async function subirImagen(formData, tipo, id) {
             }
 
             const data = await response.json();
-            console.log('Imagen subida:', data);
             return data.url;
         } catch (error) {
             console.error('Error al subir la imagen:', error);

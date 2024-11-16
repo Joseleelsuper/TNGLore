@@ -191,14 +191,14 @@ body {
 }
 
 h1 {
-    color: #2c3e50;
+    color: #000;
     text-align: center;
     margin-top: 1rem;
     margin-bottom: 0.5rem;
 }
 
 h2, h3 {
-    color: #2c3e50;
+    color: #000;
 }
 
 p {

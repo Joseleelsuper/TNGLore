@@ -78,7 +78,6 @@ function crearElementoColeccion(coleccion) {
 }
 
 async function abrirOverlayCarta(carta) {
-    console.log('Carta recibida en abrirOverlayCarta:', carta);
     const overlay = document.getElementById('overlay');
     const overlayContent = document.querySelector('.overlay-content');
 
