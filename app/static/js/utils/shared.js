@@ -50,13 +50,22 @@ function crearElementoCarta(carta) {
     const div = document.createElement('div');
     div.className = 'card carta-card';
     div.dataset.carta = JSON.stringify(carta);
+    const rarityColors = {
+        'comun': '#b0b0b0',
+        'rara': '#007bff',
+        'epica': '#6f42c1',
+        'legendaria': '#fd7e14'
+    };
+
+    const rarityColor = rarityColors[carta.rareza.toLowerCase()] || '#000';
+
     div.innerHTML = `
         <div class="card-image-container">
             <img src="${carta.image || '/static/images/placeholder-card.png'}" alt="${carta.nombre}" class="card-image">
         </div>
         <div class="card-content">
             <h3 class="card-title">${carta.nombre}</h3>
-            <p class="card-rarity">Rareza: ${carta.rareza}</p>
+            <p class="card-rarity" style="color: ${rarityColor};"><strong>${carta.rareza}</strong></p>
         </div>
     `;
     return div;
