@@ -5,16 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ images['icons']['favicon'] }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/cofres.css') }}">
+    <script type="module" src="/static/js/pages/cofres.js"></script>
     <title>TNGLore - Cofres</title>
 </head>
 <body>
-    <!-- Encabezado -->
     {% include 'components/header.html' %}
 
-    <!-- Contenido principal -->
     <main>
-        <h1>Bienvenido a TNGLore</h1>
-        <!-- Agrega aquí el contenido que desees -->
+        {% if user_chests %}
+            <div id="chest-container">
+                {% for chest in user_chests %}
+                <div class="chest-card" data-type="{{ chest.chest_type }}" data-count="{{ chest.count }}" data-rarity="{{ chest.rarity }}" data-server="{{ chest.servidor }}">
+                    <!-- Se muestra la imagen del cofre según su tipo -->
+                    <img src="{{ url_for('static', filename='assets/images/cofre-' ~ chest.chest_type ~ '.webp') }}" alt="{{ chest.chest_type }}">
+                    <span class="chest-count">{{ chest.count }}</span>
+                    <!-- Información adicional sobre la rareza y el servidor -->
+                    <div class="chest-info">
+                        <div class="chest-rarity">
+                             <strong>Rareza:</strong> <span class="rarity-value" style="color: {{ chest['rarity_color'] }}">{{ chest.chest_type | capitalize }}</span>
+                        </div>
+                        <div class="chest-server">
+                             <strong>Servidor:</strong> {{ chest.server_name }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>Todavía no tienes cofres. ¡Habla en canales de texto o entra a un canal de voz para reclamarlos!</p>
+        {% endif %}
+
+        <!-- Control para abrir un cofre (solo uno) -->
+        <div id="open-chest-controls" style="display: none;">
+            <h2>Abrir Cofre <span id="selected-chest-name"></span></h2>
+            <button id="open-chest-btn">Abrir</button>
+            <button id="cancel-open-btn">Cancelar</button>
+        </div>
+
+        <!-- Nuevo div para mostrar las cartas ganadas -->
+        <div id="cards-display" style="display: none;">
+            <h2>Cartas Ganadas</h2>
+            <div id="cards-container"></div>
+            <button id="close-cards-btn">Cerrar</button>
+        </div>
     </main>
+
+    <script src="{{ url_for('static', filename='js/pages/cofres.js') }}"></script>
 </body>
 </html>

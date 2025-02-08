@@ -120,10 +120,21 @@ function renderizarLista(containerId, items, createElementFunction) {
     if (items.length === 0) {
         container.innerHTML = `<p>No hay ${containerId.split('-')[0]} disponibles.</p>`;
     } else {
-        items.forEach(item => {
-            const element = createElementFunction(item);
-            container.appendChild(element);
-        });
+        const batchSize = 20;
+        let index = 0;
+        function renderBatch() {
+            const fragment = document.createDocumentFragment();
+            for (let i = index; i < Math.min(index + batchSize, items.length); i++) {
+                const element = createElementFunction(items[i]);
+                fragment.appendChild(element);
+            }
+            container.appendChild(fragment);
+            index += batchSize;
+            if (index < items.length) {
+                setTimeout(renderBatch, 100);
+            }
+        }
+        renderBatch();
     }
 }
 
