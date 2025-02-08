@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ images['icons']['favicon'] }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/miColeccion.css') }}">
+    <title>TNGLore - Mi Colección</title>
+</head>
+<body>
+    <!-- Encabezado -->
+    {% include 'components/header.html' %}
+
+    <!-- Contenido principal -->
+    <main>
+        <h1>Mi Colección</h1>
+        <!-- Contenedor para cartas -->
+        <div id="cards-container"></div>
+    </main>
+
+    <!-- Overlay para cartas y colecciones -->
+    <div id="overlay" style="display:none;">
+        <div class="overlay-content"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="{{ url_for('static', filename='js/utils/shared.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/pages/miColeccion.js') }}"></script>
+</body>
+</html>

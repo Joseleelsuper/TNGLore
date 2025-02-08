@@ -42,7 +42,12 @@ mkcert -install
 7. Crear un certificado local en una carpeta creada por ti en el directorio raíz.
 ```bash
 mkdir ssl
+cd ssl
 mkcert localhost 127.0.0.1
+```
+8. Ejecutar el servidor.
+```bash
+python run.py
 ```
 
 Volver al [Índice](#índice)

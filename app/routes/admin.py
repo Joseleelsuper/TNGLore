@@ -27,7 +27,6 @@ def admin_panel():
     return render_template("pages/admin.html", user=current_user, images=get_images())
 
 @admin_bp.route("/api/cartas", methods=['GET'])
-@admin_bp.route("/api/cartas", methods=['GET'])
 @login_required
 def api_cartas():
     if request.method == 'GET':
@@ -184,7 +183,7 @@ def actualizar_carta(id):
             if coleccion_id:
                 try:
                     updates['coleccion'] = ObjectId(coleccion_id)
-                except:
+                except Exception:
                     return jsonify({'error': f'ID de colección inválido: {coleccion_id}'}), 400
 
         # Imprimir los datos recibidos y las actualizaciones para depuración

@@ -9,7 +9,7 @@ collections_bp = Blueprint("collections", __name__)
 @collections_bp.route("/mi-coleccion")
 @login_required
 def my_collections():
-    return render_template("pages/mi-coleccion.html", user=current_user, images=get_images())
+    return render_template("pages/miColeccion.html", user=current_user, images=get_images())
 
 @collections_bp.route("/colecciones")
 @login_required
