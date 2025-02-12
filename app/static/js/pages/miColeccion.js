@@ -1,42 +1,48 @@
 import { cargarCartas, abrirOverlayCarta } from '../utils/shared.js';
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // Se asume que existe un contenedor con id "cards-container" en el HTML.
-    const container = document.getElementById('cards-container');
-    let cartas = await cargarCartas();
+// Función para cargar los coleccionables del usuario
+async function cargarColeccionUsuario() {
+    try {
+        const user = await fetch('/api/users/me').then(res => res.json());
+        // Se asume que user.guilds es un array donde cada guild tiene un array "coleccionables"
+        const ids = user.guilds.reduce((acc, guild) => {
+            if(guild.coleccionables && Array.isArray(guild.coleccionables)) {
+                return acc.concat(guild.coleccionables);
+            }
+            return acc;
+        }, []);
+        return new Set(ids);
+    } catch (e) {
+        console.error('Error al cargar los coleccionables del usuario:', e);
+        return new Set();
+    }
+}
 
-    // Función para ordenar las cartas según los criterios
-    function sortCards(cards, prefs = { coleccion: 1, servidor: 1, nombre: 1, rareza: 1 }) {
+document.addEventListener('DOMContentLoaded', async () => {
+    const container = document.getElementById('cards-container');
+    const sortSelect = document.getElementById('sort-select');
+    let cartas = await cargarCartas();
+    const userCollectibles = await cargarColeccionUsuario();
+
+    // Filtrar cartas que estén en la colección del usuario
+    cartas = cartas.filter(carta => userCollectibles.has(carta._id));
+
+    // Función para ordenar las cartas según el criterio elegido
+    function sortCards(cards, criterio) {
         return cards.sort((a, b) => {
-            // Orden por nombre de colección
-            const colA = (a.coleccion && a.coleccion.nombre) || '';
-            const colB = (b.coleccion && b.coleccion.nombre) || '';
-            if (colA.localeCompare(colB) !== 0) {
-                return colA.localeCompare(colB) * prefs.coleccion;
+            let valA = a[criterio] || '';
+            let valB = b[criterio] || '';
+            if (typeof valA === 'string' && typeof valB === 'string') {
+                return valA.localeCompare(valB);
             }
-            
-            // Orden por servidor (suponiendo que la propiedad 'servidor' exista; sino, cadena vacía)
-            const servA = a.servidor || '';
-            const servB = b.servidor || '';
-            if (servA.localeCompare(servB) !== 0) {
-                return servA.localeCompare(servB) * prefs.servidor;
-            }
-            
-            // Orden por nombre de la carta
-            if (a.nombre.localeCompare(b.nombre) !== 0) {
-                return a.nombre.localeCompare(b.nombre) * prefs.nombre;
-            }
-            
-            // Orden por rareza
-            return a.rareza.localeCompare(b.rareza) * prefs.rareza;
+            return valA - valB;
         });
     }
 
-    // Renderiza las cartas en el contenedor
+    // Función para renderizar las cartas en el contenedor
     function renderCards(cards) {
         container.innerHTML = '';
         cards.forEach(carta => {
-            // Se crean elementos de la carta
             const div = document.createElement('div');
             div.className = 'card carta-card';
             div.dataset.carta = JSON.stringify(carta);
@@ -49,19 +55,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <p class="card-rarity">${carta.rareza}</p>
                 </div>
             `;
-            // Activar overlay al hacer clic
             div.addEventListener('click', () => abrirOverlayCarta(carta));
             container.appendChild(div);
         });
     }
 
-    // Orden por defecto
-    const cartasOrdenadas = sortCards(cartas);
+    // Orden inicial por "nombre"
+    let cartasOrdenadas = sortCards(cartas, sortSelect.value);
     renderCards(cartasOrdenadas);
 
-    // Si se agregan controles de ordenación en el HTML, se pueden escuchar eventos y reconstruir el array prefs.
-    // Ejemplo:
-    // document.getElementById('sort-select').addEventListener('change', (e) => { ... });
-    
-    // ...existing code...
+    // Actualizar orden al cambiar el select
+    sortSelect.addEventListener('change', (e) => {
+        cartasOrdenadas = sortCards(cartas, e.target.value);
+        renderCards(cartasOrdenadas);
+    });
 });
