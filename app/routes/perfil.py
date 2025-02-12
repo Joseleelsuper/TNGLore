@@ -1,3 +1,6 @@
+import os
+from dotenv import load_dotenv
+import requests
 # perfil.py
 
 from bson.objectid import ObjectId
@@ -6,6 +9,8 @@ from flask_login import login_required, current_user, logout_user
 from app import bcrypt, mongo
 from app.utils.images import get_images
 from app.utils.validation_utils import validate_user_input
+
+load_dotenv()  # Cargar variables de entorno
 
 perfil_bp = Blueprint('perfil', __name__)
 
@@ -61,7 +66,38 @@ def perfil():
         
         return redirect(url_for('perfil.perfil'))
     
-    return render_template('pages/perfil.html', current_user=current_user, images=get_images())
+    # --- Inicio de modificaciones en GET ---
+    # Llamada a la API externa para obtener servidores
+    api_secret = os.getenv("API_SECRET")
+    servers_api_url = "https://179.61.132.190:4015/getBotServers"
+    headers = { "X-API-KEY": api_secret }
+    try:
+        response = requests.get(servers_api_url, headers=headers, verify=False)
+        response.raise_for_status()
+        servers_data = response.json()  # Se espera una lista de dicts
+    except Exception as e:
+        servers_data = []
+        print("Error al conectar con la API:", e)
+    
+    # Combinar datos de la API con la cantidad de cartas del usuario por servidor,
+    # solo se incluyen servidores que están presentes en current_user.guilds.
+    top_servers = []
+    for server in servers_data:
+        guild = next((g for g in current_user.guilds if g.get('id') == server.get('id')), None)
+        if not guild:
+            continue   # Omitir servidores sin coincidencia en el usuario
+        count = len(guild.get('coleccionables', []))
+        top_servers.append({
+            "id": server.get("id"),
+            "name": server.get("name"),
+            "icon": server.get("icon"),
+            "coleccionables_count": count
+        })
+    # Ordenar los servidores de mayor a menor cantidad de cartas
+    top_servers.sort(key=lambda s: s["coleccionables_count"], reverse=True)
+    # --- Fin de modificaciones en GET ---
+    
+    return render_template('pages/perfil.html', current_user=current_user, images=get_images(), top_servers=top_servers)
 
 @perfil_bp.route('/perfil/delete-account', methods=['POST'])
 @login_required

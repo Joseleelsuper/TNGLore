@@ -118,7 +118,6 @@ async function abrirOverlayCarta(carta) {
 
     overlay.style.display = 'block';
 
-    // Obtener el ID de la colección correctamente
     const coleccionId = carta.coleccion ? (carta.coleccion._id || carta.coleccion.id) : null;
     
     if (coleccionId) {
@@ -133,7 +132,7 @@ async function abrirOverlayCarta(carta) {
         const cartasRelacionadas = await obtenerCartasColeccion(coleccionId);
         const cartasRelacionadasContainer = document.getElementById('cartas-relacionadas-container');
         cartasRelacionadasContainer.innerHTML = cartasRelacionadas
-            .filter(c => c._id !== carta._id)
+            .filter(c => (c.coleccion && (c.coleccion._id || c.coleccion.id) === coleccionId) && c._id !== carta._id)
             .map(c => `
                 <div class="overlay-card" onclick="window.abrirOverlayCarta(${JSON.stringify(c).replace(/"/g, '&quot;')})">
                     <img src="${c.image || '/static/images/placeholder-card.png'}" alt="${c.nombre}">
@@ -146,6 +145,23 @@ async function abrirOverlayCarta(carta) {
 }
 
 async function abrirOverlayColeccion(coleccion) {
+    // Asegurarse de que coleccion sea un objeto
+    if (typeof coleccion === 'string') {
+        try {
+            coleccion = JSON.parse(coleccion);
+        } catch(e) {
+            console.error('Error al parsear datos de la colección:', e);
+            return;
+        }
+    }
+    
+    // Extraer el id de la colección
+    const coleccionId = coleccion._id || coleccion.id;
+    if (!coleccionId) {
+        console.error('El id de la colección no está definido');
+        return;
+    }
+    
     const overlay = document.getElementById('overlay');
     const overlayContent = document.querySelector('.overlay-content');
 
@@ -170,14 +186,16 @@ async function abrirOverlayColeccion(coleccion) {
 
     overlay.style.display = 'block';
 
-    const cartasColeccion = await obtenerCartasColeccion(coleccion._id);
+    const cartasColeccion = await obtenerCartasColeccion(coleccionId);
     const cartasColeccionContainer = document.getElementById('cartas-coleccion-container');
-    cartasColeccionContainer.innerHTML = cartasColeccion.map(c => `
-        <div class="overlay-card" onclick="window.abrirOverlayCarta(${JSON.stringify(c).replace(/"/g, '&quot;')})">
-            <img src="${c.image || '/static/images/placeholder-card.png'}" alt="${c.nombre}">
-            <p>${c.nombre}</p>
-        </div>
-    `).join('');
+    cartasColeccionContainer.innerHTML = cartasColeccion
+        .filter(c => c.coleccion && ((c.coleccion._id || c.coleccion.id) === coleccionId))
+        .map(c => `
+            <div class="overlay-card" onclick="window.abrirOverlayCarta(${JSON.stringify(c).replace(/"/g, '&quot;')})">
+                <img src="${c.image || '/static/images/placeholder-card.png'}" alt="${c.nombre}">
+                <p>${c.nombre}</p>
+            </div>
+        `).join('');
 
     document.querySelector('.close-btn').onclick = cerrarOverlay;
 }
@@ -199,7 +217,6 @@ export {
     obtenerOtrasColecciones
 };
 
-// Hacer las funciones de overlay disponibles globalmente
 window.abrirOverlayCarta = abrirOverlayCarta;
 window.abrirOverlayColeccion = abrirOverlayColeccion;
 window.cerrarOverlay = cerrarOverlay;
