@@ -43,6 +43,7 @@ def create_app():
     from app.routes.chests import chest_bp
     from app.routes.coleccion import collections_bp
     from app.routes.perfil import perfil_bp
+    from app.routes.faq import faq_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -50,5 +51,6 @@ def create_app():
     app.register_blueprint(chest_bp)
     app.register_blueprint(collections_bp)
     app.register_blueprint(perfil_bp)
+    app.register_blueprint(faq_bp)
 
     return app
