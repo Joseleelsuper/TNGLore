@@ -213,6 +213,6 @@ def get_user_info():
         'username': current_user.username,
         'email': current_user.email,
         'is_admin': current_user.is_admin,
-        'pfp': current_user.pfp  # Asegúrate de que este campo existe en el modelo User
+        'pfp': current_user.pfp
     }
     return jsonify(user_info)
