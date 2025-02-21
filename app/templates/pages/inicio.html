@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ images['icons']['favicon'] }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/inicio.css') }}">
     <title>TNGLore - Inicio</title>
 </head>
 <body>
@@ -13,8 +14,15 @@
 
     <!-- Contenido principal -->
     <main>
-        <h1>Bienvenido a TNGLore</h1>
+        <!-- Consola de cofres -->
+        <section id="chest-console">
+            <h2>Consola de Cofres</h2>
+            <div id="chest-log-container">
+                <!-- Aquí se cargarán los mensajes -->
+            </div>
+        </section>
         <!-- Agrega aquí el contenido que desees -->
     </main>
+    <script type="module" src="{{ url_for('static', filename='js/pages/console.js') }}"></script>
 </body>
 </html>

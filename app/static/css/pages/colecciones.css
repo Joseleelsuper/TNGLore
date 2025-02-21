@@ -73,9 +73,25 @@
 }
 
 .card-rarity {
+    font-weight: bold;
     margin: 0.5rem 0 0;
     font-size: 0.9rem;
     color: #666;
+    text-align: center;
+}
+
+/* Colores de rareza */
+.card-rarity.comun {
+    color: gray;
+}
+.card-rarity.rara {
+    color: green;
+}
+.card-rarity.epica {
+    color: purple;
+}
+.card-rarity.legendaria {
+    color: goldenrod;
 }
 
 /* Estilos para el overlay */
