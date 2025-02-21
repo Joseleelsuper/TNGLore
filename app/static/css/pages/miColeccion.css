@@ -1,4 +1,4 @@
-/* Contenedor de cartas */
+/* Contenedor general de cartas */
 #cards-container {
     display: flex;
     flex-wrap: wrap;
@@ -6,7 +6,7 @@
     justify-content: center;
 }
 
-/* Cada carta con tamaño fijo (200px) e igual estilo que en colecciones.css */
+/* Tarjeta de cada carta */
 .carta-card {
     width: 200px;
     background-color: #fff;
@@ -21,6 +21,7 @@
     position: relative;
     width: 100%;
     padding-top: 100%;
+    overflow: hidden;
 }
 
 .card-image-container:hover .card-image {
@@ -36,6 +37,7 @@
     height: 100%;
     object-fit: cover;
     transition: transform 0.3s ease;
+    cursor: pointer;
 }
 
 /* Badge para cartas repetidas */
@@ -55,11 +57,16 @@
     font-size: 1.1em;
     margin: 0.5em 0;
     text-align: center;
+    font-weight: bold;
 }
 
 /* Estilo base para rareza (se espera clase extra en el elemento, ej. "comun", "rara", etc.) */
 .card-rarity {
     font-weight: bold;
+    margin: 0.5rem 0 0.5rem;  /* Changed from '0.5rem 0 0' to add bottom margin */
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
 }
 
 /* Colores de rareza */
@@ -118,9 +125,10 @@
 }
 
 .guild-title {
-    font-size: 1.5em;
+    font-size: 1.1rem;
     margin: 0;
     text-align: center;
+    font-weight: bold;
 }
 
 
@@ -211,4 +219,12 @@
 .overlay-card p {
     margin: 5px 0;
     font-size: 0.9rem;
+}
+
+.close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
 }

@@ -56,7 +56,7 @@ function crearElementoCarta(carta) {
         </div>
         <div class="card-content">
             <h3 class="card-title">${carta.nombre}</h3>
-            <p class="card-rarity">Rareza: ${carta.rareza}</p>
+            <p class="card-rarity ${carta.rareza.toLowerCase()}">${carta.rareza}</p>
         </div>
     `;
     return div;
