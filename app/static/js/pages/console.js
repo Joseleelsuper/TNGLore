@@ -11,15 +11,14 @@ async function fetchChestLogs() {
 
 function renderChestLogs(logs) {
     const container = document.getElementById('chest-log-container');
-    // Vaciar contenedor
     container.innerHTML = '';
-    // Mostrar mensajes de log
     logs.forEach(log => {
-        // Se asume que log.username y log.chest.rareza existen
+        // Ignorar logs sin usuario registrado
+        if (!log.username) return;
         const mensaje = document.createElement('p');
         mensaje.innerHTML = `
             <span class="log-date">${new Date(log.date).toLocaleString('es-ES')}</span>
-            &nbsp;¡<span class="log-username">${log.username}</span> ha conseguido un cofre de rareza
+            &nbsp;¡<span class="log-username">${log.username}</span> ha conseguido un cofre de rareza 
             <span class="log-rareza ${log.chest.rareza.toLowerCase()}">${log.chest.rareza}</span>!
         `;
         container.appendChild(mensaje);
@@ -31,6 +30,6 @@ async function updateChestLogs() {
     renderChestLogs(logs);
 }
 
-// Actualizar cada 5 segundos
+// Actualizar cada 60 segundos
 updateChestLogs();
-setInterval(updateChestLogs, 5000);
+setInterval(updateChestLogs, 60000);
