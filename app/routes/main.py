@@ -18,7 +18,8 @@ def inicio():
 @login_required
 def cofres_log():
     try:
-        logs = list(mongo.chest_logs.find().sort("date", -1).limit(10))
+        logs = list(mongo.chest_logs.find().sort("date", -1).limit(30))
+        filtered_logs = []
         for log in logs:
             log["_id"] = str(log["_id"])
             # Si date ya es string en formato ISO, se deja; de lo contrario se formatea.
@@ -30,6 +31,9 @@ def cofres_log():
                 log["chest"] = {"rareza": chest.get("rarity", "Desconocida")} if chest else {"rareza": "Desconocida"}
             except Exception:
                 log["chest"] = {"rareza": "Desconocida"}
-        return jsonify(logs)
+            # Filtrar logs: solo incluir si el username existe en la colección users
+            if mongo.users.find_one({"username": log.get("username")}):
+                filtered_logs.append(log)
+        return jsonify(filtered_logs)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
