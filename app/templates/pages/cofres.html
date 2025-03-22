@@ -6,7 +6,7 @@
     <link rel="icon" href="{{ images['icons']['favicon'] }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/cofres.css') }}">
-    <script type="module" src="/static/js/pages/cofres.js"></script>
+    <script type="module" src="{{ url_for('static', filename='js/pages/cofres.js') }}"></script>
     <title>TNGLore - Cofres</title>
 </head>
 <body>
@@ -14,9 +14,13 @@
 
     <main>
         {% if user_chests %}
-            <div id="chest-container">
+            <!-- Contenedor para los servidores -->
+            <div id="servers-container"></div>
+            
+            <!-- Contenedor oculto con los cofres originales para que JavaScript pueda procesarlos -->
+            <div id="chest-data" style="display: none;">
                 {% for chest in user_chests %}
-                <div class="chest-card" data-type="{{ chest.chest_type }}" data-count="{{ chest.count }}" data-rarity="{{ chest.rarity }}" data-server="{{ chest.servidor }}">
+                <div class="chest-card" data-type="{{ chest.chest_type }}" data-count="{{ chest.count }}" data-rarity="{{ chest.rarity }}" data-server="{{ chest.servidor }}" data-server-icon="{{ chest.server_icon|default('') }}">
                     <!-- Se muestra la imagen del cofre según su tipo -->
                     <img src="{{ url_for('static', filename='assets/images/cofre-' ~ chest.chest_type ~ '.webp') }}" alt="{{ chest.chest_type }}">
                     <span class="chest-count">{{ chest.count }}</span>
@@ -50,7 +54,5 @@
             <button id="close-cards-btn">Cerrar</button>
         </div>
     </main>
-
-    <script src="{{ url_for('static', filename='js/pages/cofres.js') }}"></script>
 </body>
 </html>

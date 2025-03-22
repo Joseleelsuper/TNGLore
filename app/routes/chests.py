@@ -75,11 +75,19 @@ def chests():
                     "image": get_image_url(rarity)
                 }
         user_chests = list(grouped.values())
-        # Asignar el nombre del servidor usando el campo 'guilds' del usuario
-        guild_mapping = {guild['id']: guild.get('name', "Servidor desconocido")
-                         for guild in user_data.get("guilds", [])}
+        # Crear un mapeo de servidores que incluya nombres e iconos
+        guild_mapping = {
+            guild['id']: {
+                'name': guild.get('name', "Servidor desconocido"),
+                'icon': guild.get('icon', "")
+            }
+            for guild in user_data.get("guilds", [])
+        }
+        
         for chest in user_chests:
-            chest["server_name"] = guild_mapping.get(chest["servidor"], "Servidor desconocido")
+            server_info = guild_mapping.get(chest["servidor"], {'name': "Servidor desconocido", 'icon': ""})
+            chest["server_name"] = server_info['name']
+            chest["server_icon"] = server_info['icon']
             chest["rarity_color"] = rarity_colors.get(chest["chest_type"], "#000")
     return render_template("pages/cofres.html", user=current_user, images=get_images(), user_chests=user_chests)
 
