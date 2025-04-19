@@ -15,10 +15,11 @@ CHEST_CONFIG = {
     "comun": {"cards": 2, "probabilities": [70, 16, 12, 2], "name": "Común"},
     "rara": {"cards": 3, "probabilities": [35, 45, 15, 5], "name": "Raro"},
     "epica": {"cards": 4, "probabilities": [20, 30, 35, 15], "name": "Épico"},
-    "legendaria": {"cards": 5, "probabilities": [10, 25, 35, 30], "name": "Legendario"}
+    "legendaria": {"cards": 5, "probabilities": [10, 25, 35, 30], "name": "Legendario"},
 }
 
 CARD_RARITIES = ["comun", "rara", "epica", "legendaria"]
+
 
 def get_image_url(rarity):
     mapping = {
@@ -29,12 +30,14 @@ def get_image_url(rarity):
     }
     return mapping.get(rarity, "")
 
+
 rarity_colors = {
-    "comun": "#9e9e9e",  
-    "rara": "#4CAF50", 
+    "comun": "#9e9e9e",
+    "rara": "#4CAF50",
     "epica": "#9C27B0",
-    "legendaria": "#FFD700"
+    "legendaria": "#FFD700",
 }
+
 
 # Agregar función auxiliar para serializar ObjectIds en objetos anidados
 def serialize_doc(doc):
@@ -47,15 +50,16 @@ def serialize_doc(doc):
     else:
         return doc
 
+
 @chest_bp.route("/cofres")
 @login_required
 def chests():
     # Obtener el usuario real desde MongoDB usando su email
     user_data = mongo.users.find_one({"email": current_user.email})
     user_chests = []
-    if user_data and 'chests' in user_data:
+    if user_data and "chests" in user_data:
         # Contar IDs repetidos en el array
-        chest_id_list = user_data.get('chests', [])
+        chest_id_list = user_data.get("chests", [])
         chest_counts = Counter(chest_id_list)
         unique_ids = [ObjectId(_id) for _id in chest_counts.keys()]
         chests_docs = list(mongo.chests.find({"_id": {"$in": unique_ids}}))
@@ -72,24 +76,32 @@ def chests():
                     "chest_type": rarity,
                     "servidor": servidor,
                     "count": count,
-                    "image": get_image_url(rarity)
+                    "image": get_image_url(rarity),
                 }
         user_chests = list(grouped.values())
         # Crear un mapeo de servidores que incluya nombres e iconos
         guild_mapping = {
-            guild['id']: {
-                'name': guild.get('name', "Servidor desconocido"),
-                'icon': guild.get('icon', "")
+            guild["id"]: {
+                "name": guild.get("name", "Servidor desconocido"),
+                "icon": guild.get("icon", ""),
             }
             for guild in user_data.get("guilds", [])
         }
-        
+
         for chest in user_chests:
-            server_info = guild_mapping.get(chest["servidor"], {'name': "Servidor desconocido", 'icon': ""})
-            chest["server_name"] = server_info['name']
-            chest["server_icon"] = server_info['icon']
+            server_info = guild_mapping.get(
+                chest["servidor"], {"name": "Servidor desconocido", "icon": ""}
+            )
+            chest["server_name"] = server_info["name"]
+            chest["server_icon"] = server_info["icon"]
             chest["rarity_color"] = rarity_colors.get(chest["chest_type"], "#000")
-    return render_template("pages/cofres.html", user=current_user, images=get_images(), user_chests=user_chests)
+    return render_template(
+        "pages/cofres.html",
+        user=current_user,
+        images=get_images(),
+        user_chests=user_chests,
+    )
+
 
 @chest_bp.route("/api/open_chests", methods=["POST"])
 @login_required
@@ -105,11 +117,17 @@ def open_chests():
 
     # Verificar que el usuario tenga al menos un cofre del tipo y servidor indicados
     user_data = mongo.users.find_one({"email": current_user.email})
+    if not user_data:
+        return jsonify({"error": "Usuario no encontrado"}), 400
     user_chest_ids = user_data.get("chests", [])
     matching_id = None
     for chest_id in user_chest_ids:
         chest_doc = mongo.chests.find_one({"_id": ObjectId(chest_id)})
-        if chest_doc and chest_doc.get("rarity") == chest_type and chest_doc.get("servidor") == server:
+        if (
+            chest_doc
+            and chest_doc.get("rarity") == chest_type
+            and chest_doc.get("servidor") == server
+        ):
             matching_id = chest_id
             break
     if not matching_id:
@@ -125,16 +143,14 @@ def open_chests():
         for rarity, prob in zip(CARD_RARITIES, config["probabilities"]):
             cumulative += prob
             if r <= cumulative:
-                pipeline = [
-                    {"$match": {"rareza": rarity}},
-                    {"$sample": {"size": 1}}
-                ]
+                pipeline = [{"$match": {"rareza": rarity}}, {"$sample": {"size": 1}}]
                 results = list(mongo.collectables.aggregate(pipeline))
                 if results:
                     # Convertir el documento para que sea JSON serializable
                     card_doc = serialize_doc(results[0])
                     cards.append(card_doc)
-                    received_card_ids.append(card_doc["_id"])
+                    if isinstance(card_doc, dict) and "_id" in card_doc:
+                        received_card_ids.append(card_doc["_id"])
                 else:
                     cards.append({"nombre": f"Sin carta {rarity}", "rareza": rarity})
                 break
@@ -146,12 +162,11 @@ def open_chests():
     except ValueError:
         pass
     mongo.users.update_one(
-        {"email": current_user.email},
-        {"$set": {"chests": user_chests}}
+        {"email": current_user.email}, {"$set": {"chests": user_chests}}
     )
     # Agregar las cartas obtenidas a "coleccionables" en el guild correspondiente
     mongo.users.update_one(
         {"email": current_user.email, "guilds.id": server},
-        {"$push": {"guilds.$.coleccionables": {"$each": received_card_ids}}}
+        {"$push": {"guilds.$.coleccionables": {"$each": received_card_ids}}},
     )
     return jsonify({"results": {"chest_type": chest_type, "cards": cards}})

@@ -16,7 +16,7 @@ def create_app():
 
     # Inicializar extensiones
     login_manager.init_app(app)
-    login_manager.login_view = "auth.auth"
+    login_manager.login_view = "auth.login"  # type: ignore
     bcrypt.init_app(app)
 
     # Conectar MongoDB con manejo de errores
