@@ -25,7 +25,7 @@ def perfil():
         
         is_valid, error_message = validate_user_input(username, email, password)
         if not is_valid:
-            flash(error_message, 'error')
+            flash(error_message or "Ha ocurrido un error de validación.", 'error')
             return redirect(url_for('perfil.perfil'))
         
         updates = {}
@@ -69,7 +69,7 @@ def perfil():
     # --- Inicio de modificaciones en GET ---
     # Llamada a la API externa para obtener servidores
     api_secret = os.getenv("API_SECRET")
-    servers_api_url = "https://179.61.132.190:4015/getBotServers"
+    servers_api_url = "https://207.244.199.172:7007/getBotServers"
     headers = { "X-API-KEY": api_secret }
     try:
         response = requests.get(servers_api_url, headers=headers, verify=False)

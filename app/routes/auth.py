@@ -1,4 +1,3 @@
-from functools import wraps
 import os
 from requests_oauthlib import OAuth2Session
 from flask import (
@@ -73,7 +72,7 @@ def register():
 
         is_valid, error_message = validate_user_input(username, email, password)
         if not is_valid:
-            flash(error_message, "error")
+            flash(error_message or "Error de validación de usuario", "error")
             return redirect(url_for("auth.auth"))
 
         if mongo.users.find_one({"$or": [{"username": username}, {"email": email}]}):
@@ -101,7 +100,7 @@ def register():
 
         return redirect(url_for("main.inicio"))
 
-    except Exception as e:
+    except Exception:
         flash("Error al registrar usuario", "error")
         return redirect(url_for("auth.auth"))
 
@@ -206,13 +205,14 @@ def logout():
     logout_user()
     return redirect(url_for("auth.auth"))
 
-@auth_bp.route('/api/user', methods=['GET'])
+
+@auth_bp.route("/api/user", methods=["GET"])
 @login_required
 def get_user_info():
     user_info = {
-        'username': current_user.username,
-        'email': current_user.email,
-        'is_admin': current_user.is_admin,
-        'pfp': current_user.pfp
+        "username": current_user.username,
+        "email": current_user.email,
+        "is_admin": current_user.is_admin,
+        "pfp": current_user.pfp,
     }
     return jsonify(user_info)
