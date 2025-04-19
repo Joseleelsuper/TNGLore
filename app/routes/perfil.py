@@ -69,7 +69,7 @@ def perfil():
     # --- Inicio de modificaciones en GET ---
     # Llamada a la API externa para obtener servidores
     api_secret = os.getenv("API_SECRET")
-    servers_api_url = "https://207.244.199.172:7007/getBotServers"
+    servers_api_url = "https://172.93.110.38:4009/getBotServers"
     headers = { "X-API-KEY": api_secret }
     try:
         response = requests.get(servers_api_url, headers=headers, verify=False)
