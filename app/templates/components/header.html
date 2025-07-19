@@ -2,6 +2,22 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/header.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="{{ url_for('static', filename='js/utils/header.js') }}"></script>
+    
+    <!-- Registro del Service Worker para caché del navegador -->
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(function(registration) {
+                    console.log('Service Worker registrado con éxito:', registration.scope);
+                })
+                .catch(function(error) {
+                    console.log('Error al registrar Service Worker:', error);
+                });
+        });
+    }
+    </script>
+    
     <div class="logo">
         <a href="/inicio"><strong>TNGLore</strong></a>
     </div>

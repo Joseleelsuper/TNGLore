@@ -6,6 +6,8 @@
     <link rel="icon" href="{{ images['icons']['favicon'] }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/cofres.css') }}">
+    <!-- Cargar optimizaciones de rendimiento -->
+    <script type="module" src="{{ url_for('static', filename='js/pages/performance-integration.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/pages/cofres.js') }}"></script>
     <title>TNGLore - Cofres</title>
 </head>
@@ -13,9 +15,14 @@
     {% include 'components/header.html' %}
 
     <main>
+        <!-- Indicador de carga -->
+        <div id="loading-indicator" class="loading-spinner" style="display: none;">
+            <p>Cargando cofres...</p>
+        </div>
+        
         {% if user_chests %}
             <!-- Contenedor para los servidores -->
-            <div id="servers-container"></div>
+            <div id="servers-container" class="chest-container"></div>
             
             <!-- Contenedor oculto con los cofres originales para que JavaScript pueda procesarlos -->
             <div id="chest-data" style="display: none;">
