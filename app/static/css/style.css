@@ -1,3 +1,7 @@
+/* Importar estilos de componentes */
+@import url('./components/header.css');
+@import url('./components/performance.css');
+
 * {
     margin: 0;
     padding: 0;
