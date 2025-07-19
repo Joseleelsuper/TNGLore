@@ -520,7 +520,6 @@ async function abrirOverlayColeccion(coleccion) {
                 <div class="overlay-details">
                     <h2>${coleccionCompleta.nombre}</h2>
                     <p><strong>Descripción:</strong> ${coleccionCompleta.descripcion || 'Sin descripción'}</p>
-                    <p><strong>Total de cartas:</strong> ${coleccionCompleta.count || 'Calculando...'}</p>
                 </div>
             </div>
             <div class="overlay-section">
