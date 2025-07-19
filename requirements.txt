@@ -6,6 +6,5 @@ Flask_caching==2.3.1
 pymongo==4.6.3
 python-dotenv==1.0.0
 requests-oauthlib==2.0.0
-asyncio==3.4.3
 motor==3.5.3
 aiofiles==24.1.0
