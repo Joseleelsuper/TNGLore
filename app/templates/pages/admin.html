@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Cargar optimizaciones de rendimiento -->
+    <script type="module" src="{{ url_for('static', filename='js/pages/performance-integration.js') }}"></script>
     <script src="{{ url_for('static', filename='js/pages/admin.js') }}" defer></script>
     <script type="module" src="{{ url_for('static', filename='js/utils/shared.js') }}"></script>
     <title>TNGLore - Panel de Administrador</title>
@@ -16,6 +18,11 @@
 
     <main class="admin-panel">
         <h1>Panel de Administrador</h1>
+        
+        <!-- Indicador de carga global -->
+        <div id="loading-indicator" class="loading-spinner" style="display: none;">
+            <p>Cargando datos de administración...</p>
+        </div>
 
         <section id="cartas-section" class="admin-section">
             <h2>Gestión de Cartas</h2>

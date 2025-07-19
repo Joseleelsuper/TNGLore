@@ -137,13 +137,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('close-cards-btn').addEventListener('click', () => {
-        cardsDisplay.style.display = 'none';
-        cardsContainer.innerHTML = '';
+    // Event listener inicial (se mantiene por si acaso)
+    document.addEventListener('click', (e) => {
+        if (e.target.id === 'close-cards-btn') {
+            cardsDisplay.style.display = 'none';
+        }
+        
+        // Cerrar cards-display al hacer clic en el fondo
+        if (e.target === cardsDisplay) {
+            cardsDisplay.style.display = 'none';
+        }
+        
+        // Cerrar overlay al hacer clic en el fondo
+        if (e.target.id === 'overlay') {
+            e.target.style.display = 'none';
+        }
+        
+        // Cerrar overlay con el botón X
+        if (e.target.classList.contains('close-btn')) {
+            document.getElementById('overlay').style.display = 'none';
+        }
     });
 
     function mostrarCartas(cards) {
-        cardsContainer.innerHTML = '';
+        cardsDisplay.innerHTML = `
+            <div>
+                <h2>Cartas Ganadas</h2>
+                <div id="cards-container"></div>
+                <button id="close-cards-btn">Cerrar</button>
+            </div>
+        `;
+        
+        const cardsContainer = document.getElementById('cards-container');
         cards.forEach(card => {
             const div = document.createElement('div');
             div.className = 'card-item';
@@ -164,7 +189,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             cardsContainer.appendChild(div);
         });
+
+        // Re-añadir event listeners
+        document.getElementById('close-cards-btn').addEventListener('click', () => {
+            cardsDisplay.style.display = 'none';
+        });
         
-        cardsDisplay.style.display = 'block';
+        cardsDisplay.style.display = 'flex';
     }
 });
