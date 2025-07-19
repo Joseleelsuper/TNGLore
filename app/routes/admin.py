@@ -2,12 +2,12 @@ import requests
 import base64
 import os
 
-from flask import Blueprint, current_app, json, render_template, request, jsonify
+from flask import Blueprint, current_app, render_template, request, jsonify
 from flask_login import login_required, current_user
 from bson.objectid import ObjectId
 from werkzeug.security import generate_password_hash
 
-from app import mongo
+from app import mongo, cache
 from app.utils.adminRequired import admin_required
 from app.utils.images import get_images
 
@@ -19,20 +19,99 @@ GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "development")
 admin_bp = Blueprint("admin", __name__)
 
 
+@cache.memoize(timeout=600)  # 10 minutos de caché
+def get_all_cards_cached():
+    """Obtiene todas las cartas con caché para admin"""
+    try:
+        cards = list(mongo.collectables.find())
+        # Serializar ObjectIds
+        for card in cards:
+            card["_id"] = str(card["_id"])
+        return cards
+    except Exception as e:
+        current_app.logger.error(f"Error getting cards: {e}")
+        return []
+
+
+@cache.memoize(timeout=1200)  # 20 minutos de caché
+def get_all_collections_cached():
+    """Obtiene todas las colecciones con caché para admin"""
+    try:
+        collections = list(mongo.collections.find())
+        
+        # Serializar ObjectIds
+        for collection in collections:
+            if collection.get("_id"):
+                collection["_id"] = str(collection["_id"])
+        
+        return collections
+    except Exception as e:
+        current_app.logger.error(f"Error getting collections: {e}")
+        return []
+
+
+@cache.memoize(timeout=300)  # 5 minutos de caché
+def get_all_users_cached():
+    """Obtiene todos los usuarios con caché para admin"""
+    try:
+        users = list(mongo.users.find({}, {
+            "password": 0  # Excluir contraseñas por seguridad
+        }))
+        # Serializar ObjectIds
+        for user in users:
+            user["_id"] = str(user["_id"])
+        return users
+    except Exception as e:
+        current_app.logger.error(f"Error getting users: {e}")
+        return []
+
+
+def invalidate_cards_cache():
+    """Invalida el caché de cartas cuando se modifican"""
+    cache.delete_memoized(get_all_cards_cached)
+    cache.delete_memoized(get_all_collections_cached)
+
+
+def invalidate_collections_cache():
+    """Invalida el caché de colecciones cuando se modifican"""
+    cache.delete_memoized(get_all_collections_cached)
+
+
+def invalidate_users_cache():
+    """Invalida el caché de usuarios cuando se modifican"""
+    cache.delete_memoized(get_all_users_cached)
+
+
 @admin_bp.route("/admin")
 @login_required
 @admin_required
 def admin_panel():
+    """Panel de administración con datos cacheados"""
     return render_template("pages/admin.html", user=current_user, images=get_images())
+
 
 @admin_bp.route("/api/cartas", methods=['GET'])
 @login_required
+@admin_required
 def api_cartas():
+    """API para obtener cartas con caché"""
     try:
-        cartas = list(mongo.collectables.find())
+        cartas = get_all_cards_cached()
+        
+        # Filtrar por colección si se especifica
+        coleccion_id = request.args.get('coleccion')
+        if coleccion_id:
+            try:
+                # Convertir a ObjectId para la consulta
+                from bson import ObjectId
+                coleccion_oid = ObjectId(coleccion_id)
+                cartas = [carta for carta in cartas if carta.get('coleccion') == coleccion_oid]
+            except Exception:
+                # Si no es un ObjectId válido, no filtrar
+                pass
+        
+        # Procesar información de colecciones para cada carta
         for carta in cartas:
-            carta['_id'] = str(carta['_id'])
-            # Obtener la información completa de la colección
             if 'coleccion' in carta and carta['coleccion']:
                 coleccion = mongo.collections.find_one({'_id': carta['coleccion']})
                 if coleccion:
@@ -59,6 +138,32 @@ def api_cartas():
         return jsonify(cartas), 200
     except Exception as e:
         current_app.logger.error(f"Error al obtener cartas: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+
+@admin_bp.route("/api/collections", methods=['GET'])
+@login_required
+@admin_required
+def api_collections():
+    """API para obtener colecciones con caché"""
+    try:
+        collections = get_all_collections_cached()
+        return jsonify(collections), 200
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener colecciones: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+
+@admin_bp.route("/api/users", methods=['GET'])
+@login_required
+@admin_required
+def api_users():
+    """API para obtener usuarios con caché"""
+    try:
+        users = get_all_users_cached()
+        return jsonify(users), 200
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener usuarios: {str(e)}", exc_info=True)
         return jsonify({'error': 'Error interno del servidor'}), 500
 
 
@@ -107,34 +212,17 @@ def serialize_object_id(obj):
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 
-@admin_bp.route("/api/cartas", methods=["GET"])
-@login_required
-@admin_required
-def obtener_cartas():
-    try:
-        cartas = list(mongo.collectables.find())
-        return (
-            json.dumps(cartas, default=serialize_object_id),
-            200,
-            {"Content-Type": "application/json"},
-        )
-    except Exception as e:
-        print(f"Error al obtener cartas: {str(e)}")
-        return jsonify({"error": "Error interno del servidor"}), 500
+
 
 
 @admin_bp.route("/api/colecciones", methods=["GET"])
 @login_required
 def obtener_colecciones():
     try:
-        colecciones = list(mongo.collections.find())
-        return (
-            json.dumps(colecciones, default=serialize_object_id),
-            200,
-            {"Content-Type": "application/json"},
-        )
+        colecciones = get_all_collections_cached()
+        return jsonify(colecciones), 200
     except Exception as e:
-        print(f"Error al obtener colecciones: {str(e)}")
+        current_app.logger.error(f"Error al obtener colecciones: {str(e)}")
         return jsonify({"error": "Error interno del servidor"}), 500
 
 
@@ -165,6 +253,10 @@ def crear_carta():
             return jsonify({"error": "La colección especificada no existe"}), 400
 
         result = mongo.collectables.insert_one(nueva_carta)
+        
+        # Invalidar caché después de crear
+        invalidate_cards_cache()
+        
         return jsonify({"message": "Carta creada", "id": str(result.inserted_id)}), 201
     except ValueError as ve:
         return jsonify({"error": f"ID de colección inválido: {str(ve)}"}), 400
@@ -209,6 +301,10 @@ def actualizar_carta(id):
             result = mongo.collectables.update_one(
                 {"_id": ObjectId(id)}, {"$set": updates}
             )
+            
+            # Invalidar caché después de actualizar
+            invalidate_cards_cache()
+            
             if result.modified_count == 0:
                 # Verificar si la carta existe pero no se modificó
                 if mongo.collectables.find_one({"_id": ObjectId(id)}):
@@ -237,6 +333,10 @@ def crear_coleccion():
             "image": None,  # Se actualizará después de subir la imagen
         }
         result = mongo.collections.insert_one(nueva_coleccion)
+        
+        # Invalidar caché después de crear
+        invalidate_collections_cache()
+        
         return jsonify(
             {"message": "Colección creada", "id": str(result.inserted_id)}
         ), 201
@@ -327,8 +427,12 @@ def api_coleccion(id):
 @login_required
 @admin_required
 def api_usuarios():
-    usuarios = list(mongo.users.find({}, {"password": 0}))
-    return jsonify([{**usuario, "_id": str(usuario["_id"])} for usuario in usuarios])
+    try:
+        usuarios = get_all_users_cached()
+        return jsonify(usuarios), 200
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener usuarios: {str(e)}")
+        return jsonify({"error": "Error interno del servidor"}), 500
 
 
 @admin_bp.route("/api/usuarios/<id>", methods=["GET", "DELETE"])
@@ -345,6 +449,10 @@ def api_usuario(id):
         result = mongo.users.delete_one({"_id": ObjectId(id)})
         if result.deleted_count == 0:
             return jsonify({"error": "Usuario no encontrado"}), 404
+        
+        # Invalidar caché después de eliminar usuario
+        invalidate_users_cache()
+        
         return jsonify({"message": "Usuario eliminado"})
     return jsonify({"error": "Método no permitido"}), 405
 
@@ -361,6 +469,10 @@ def cambiar_contrasena_usuario(id):
     mongo.users.update_one(
         {"_id": ObjectId(id)}, {"$set": {"password": hashed_password}}
     )
+    
+    # Invalidar caché después de actualizar contraseña
+    invalidate_users_cache()
+    
     return jsonify({"message": "Contraseña actualizada"})
 
 
@@ -429,10 +541,14 @@ def upload_image():
             mongo.collections.update_one(
                 {"_id": ObjectId(id)}, {"$set": {"image": image_url}}
             )
+            # Invalidar caché después de actualizar imagen de colección
+            invalidate_collections_cache()
         else:
             mongo.collectables.update_one(
                 {"_id": ObjectId(id)}, {"$set": {"image": image_url}}
             )
+            # Invalidar caché después de actualizar imagen de carta
+            invalidate_cards_cache()
 
         return jsonify({"message": "Imagen subida exitosamente", "url": image_url})
     except Exception as e:
@@ -469,6 +585,10 @@ def eliminar_carta(id):
             )
             delete_from_github(image_path)
         mongo.collectables.delete_one({"_id": ObjectId(id)})
+        
+        # Invalidar caché después de eliminar
+        invalidate_cards_cache()
+        
         return jsonify({"message": "Carta eliminada"})
     return jsonify({"error": "Carta no encontrada"}), 404
 
@@ -486,5 +606,10 @@ def eliminar_coleccion(id):
         # Eliminar la colección y sus cartas de la base de datos
         mongo.collections.delete_one({"_id": ObjectId(id)})
         mongo.collectables.delete_many({"coleccion": ObjectId(id)})
+        
+        # Invalidar caché después de eliminar
+        invalidate_collections_cache()
+        invalidate_cards_cache()  # También invalidar cartas porque se eliminaron cartas asociadas
+        
         return jsonify({"message": "Colección y cartas asociadas eliminadas"})
     return jsonify({"error": "Colección no encontrada"}), 404
