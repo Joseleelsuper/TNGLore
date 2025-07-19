@@ -1,3 +1,18 @@
+// Funciones auxiliares para manejo seguro de IDs
+function extraerID(objeto) {
+    if (!objeto) return null;
+    
+    if (typeof objeto === 'string') {
+        return objeto;
+    }
+    
+    if (typeof objeto === 'object' && objeto !== null) {
+        return objeto._id || objeto.id || null;
+    }
+    
+    return null;
+}
+
 document.addEventListener('DOMContentLoaded', initializeAdminPanel);
 
 function initializeAdminPanel() {
@@ -434,75 +449,6 @@ async function cargarDatosExistentes(tipo, id) {
     }
 }
 
-async function abrirOverlayCarta(carta) {
-    const overlay = document.getElementById('overlay');
-    const overlayContent = document.querySelector('.overlay-content');
-    
-    // Asegurarse de que carta sea un objeto y no una cadena JSON
-    if (typeof carta === 'string') {
-        try {
-            carta = JSON.parse(carta);
-        } catch (e) {
-            console.error('Error al parsear datos de la carta:', e);
-            return;
-        }
-    }
-
-    overlayContent.innerHTML = `
-        <span class="close-btn">&times;</span>
-        <div class="overlay-main">
-            <div class="overlay-image-container">
-                <a href="${carta.image || '/static/images/placeholder-card.png'}" target="_blank">
-                    <img src="${carta.image || '/static/images/placeholder-card.png'}" alt="${carta.nombre}" style="max-height: 400px; width: auto;">
-                </a>
-            </div>
-            <div class="overlay-details">
-                <h2>${carta.nombre}</h2>
-                <p><strong>Rareza:</strong> ${carta.rareza}</p>
-                <p><strong>Colección:</strong> ${carta.coleccion ? carta.coleccion.nombre : 'No asignada'}</p>
-                <p><strong>Descripción:</strong> ${carta.descripcion || 'Sin descripción'}</p>
-            </div>
-        </div>
-        <div class="overlay-section">
-            <h3>Colección a la que pertenece</h3>
-            <div class="overlay-cards" id="coleccion-container"></div>
-        </div>
-        <div class="overlay-section">
-            <h3>Otras cartas de la misma colección</h3>
-            <div class="overlay-cards" id="cartas-relacionadas-container"></div>
-        </div>
-    `;
-
-    overlay.style.display = 'block';
-
-    // Cargar la colección a la que pertenece
-    if (carta.coleccion && carta.coleccion.id) {
-        const coleccionContainer = document.getElementById('coleccion-container');
-        coleccionContainer.innerHTML = `
-            <div class="overlay-card" onclick="abrirOverlayColeccion('${carta.coleccion.id}')">
-                <img src="${carta.coleccion.image || '/static/images/placeholder-collection.png'}" alt="${carta.coleccion.nombre}">
-                <p>${carta.coleccion.nombre}</p>
-            </div>
-        `;
-    }
-
-    // Cargar cartas relacionadas
-    if (carta.coleccion && carta.coleccion.id) {
-        const cartasRelacionadas = await obtenerCartasRelacionadas(carta.coleccion.id);
-        const cartasRelacionadasContainer = document.getElementById('cartas-relacionadas-container');
-        cartasRelacionadasContainer.innerHTML = cartasRelacionadas
-            .filter(c => c._id !== carta._id)  // Excluir la carta actual
-            .map(c => `
-                <div class="overlay-card" onclick="abrirOverlayCarta(${JSON.stringify(c).replace(/"/g, '&quot;')})">
-                    <img src="${c.image || '/static/images/placeholder-card.png'}" alt="${c.nombre}">
-                    <p>${c.nombre}</p>
-                </div>
-            `).join('');
-    }
-
-    document.querySelector('.close-btn').onclick = cerrarOverlay;
-}
-
 async function obtenerColeccionCompleta(id) {
     try {
         const response = await fetch(`/api/colecciones/${id}`);
@@ -520,8 +466,8 @@ async function abrirOverlayColeccion(coleccion) {
     const overlay = document.getElementById('overlay');
     const overlayContent = document.querySelector('.overlay-content');
     
-    // Asegurarse de que tenemos el ID de la colección
-    const coleccionId = typeof coleccion === 'string' ? coleccion : coleccion.id || coleccion._id;
+    // Asegurarse de que tenemos el ID de la colección usando la función auxiliar
+    const coleccionId = extraerID(coleccion);
 
     // Obtener los datos completos de la colección
     const coleccionCompleta = await obtenerColeccionCompleta(coleccionId);
@@ -579,10 +525,6 @@ async function abrirOverlayColeccion(coleccion) {
         `).join('');
 
     document.querySelector('.close-btn').onclick = cerrarOverlay;
-}
-
-function cerrarOverlay() {
-    document.getElementById('overlay').style.display = 'none';
 }
 
 async function obtenerCartasRelacionadas(coleccionId) {

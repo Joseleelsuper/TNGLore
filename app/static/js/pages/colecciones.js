@@ -3,7 +3,9 @@ import {
     cargarCartas,
     crearElementoColeccion,
     crearElementoCarta,
-    cerrarOverlay
+    cerrarOverlay,
+    extraerID,
+    compararIDs
 } from '../utils/shared.js';
 
 document.addEventListener('DOMContentLoaded', initializeColeccionesPage);
@@ -26,10 +28,9 @@ async function loadInitialData() {
             const elementoColeccion = crearElementoColeccion(coleccion);
             elementoColeccion.onclick = () => window.abrirOverlayColeccion(coleccion);
             
-            // Corregir la comparación de IDs
+            // Filtrar cartas que pertenecen a esta colección
             const cartasColeccion = cartas.filter(carta => 
-                carta.coleccion && 
-                (carta.coleccion._id === coleccion._id || carta.coleccion.id === coleccion._id)
+                compararIDs(carta.coleccion, coleccion)
             );
             
             const contenedorCartas = document.createElement('div');

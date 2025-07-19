@@ -78,13 +78,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderAllGuilds(sortCriterio) {
         container.innerHTML = '';
-        // Se preserva el orden de aparición de los guilds
-        userData.guilds.forEach(guild => {
-            if (guild.coleccionables && guild.coleccionables.length) {
-                const section = renderGuildCards(guild, cards, sortCriterio);
-                container.appendChild(section);
-            }
-        });
+        // Verificar que userData y guilds existan antes de iterar
+        if (userData && userData.guilds && Array.isArray(userData.guilds)) {
+            // Se preserva el orden de aparición de los guilds
+            userData.guilds.forEach(guild => {
+                if (guild.coleccionables && guild.coleccionables.length) {
+                    const section = renderGuildCards(guild, cards, sortCriterio);
+                    container.appendChild(section);
+                }
+            });
+        } else {
+            container.innerHTML = '<p>No hay datos de colecciones disponibles.</p>';
+        }
     }
 
     renderAllGuilds(sortSelect.value);
