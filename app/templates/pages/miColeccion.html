@@ -14,7 +14,7 @@
 
     <!-- Contenido principal -->
     <main>
-        {% if coleccion and coleccion|length > 0 %}
+        {% if coleccion|length == 0 %}
         <!-- Controles de ordenación -->
         <div id="sorting-controls">
             <label for="sort-select">Ordenar por:</label>
