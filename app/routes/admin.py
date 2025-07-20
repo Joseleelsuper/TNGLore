@@ -50,8 +50,8 @@ def get_all_collections_cached():
         return []
 
 
-@cache.memoize(timeout=300)  # 5 minutos de caché
 @admin_required
+@cache.memoize(timeout=300)  # 5 minutos de caché
 def get_all_users_cached():
     """Obtiene todos los usuarios con caché para admin"""
     try:
