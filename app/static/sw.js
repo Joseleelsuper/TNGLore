@@ -1,5 +1,4 @@
 // Service Worker para caché de imágenes y recursos estáticos
-// app/static/sw.js
 
 const CACHE_NAME = 'tnglore-cache-v1';
 const IMAGE_CACHE_NAME = 'tnglore-images-v1';

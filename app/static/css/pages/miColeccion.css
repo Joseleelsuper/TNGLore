@@ -85,6 +85,7 @@
 
 /* Estilo para controles de ordenación */
 #sorting-controls {
+    margin-top: 3rem;
     margin-bottom: 1rem;
     text-align: center;
 }
@@ -107,14 +108,17 @@
     padding: 1rem;
 }
 
-/* Estilos para la cabecera de cada servidor */
 .guild-header {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    justify-content: center; /* Changed from flex-start to center */
-    border-bottom: 1px solid #ddd;
+    justify-content: center;
+    padding: 1rem;
+    border-bottom: 2px solid #dee2e6;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    background: linear-gradient(90deg, #4d7cff 0%, #6c5ce7 100%);
+    border-radius: 8px;
+    color: white;
 }
 
 .guild-icon {
@@ -251,4 +255,11 @@
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
+}
+
+#no-cards-text {
+    color: red;
+    text-align: center;
+    margin-top: 4rem;
+    font-size: 30px;
 }

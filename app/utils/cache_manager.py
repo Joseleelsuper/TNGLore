@@ -43,14 +43,18 @@ class CacheManager:
     def invalidate_pattern(self, pattern: str):
         """Invalida todas las claves que coincidan con un patrón"""
         # Nota: Flask-Caching no soporta patrones por defecto
-        # Esta es una implementación básica
+        # Esta es una implementación básica para RedisCache.
         keys_to_delete = []
-        if hasattr(self.cache.cache, 'scan_iter'):
-            for key in self.cache.cache.scan_iter(match=f"*{pattern}*"):
+        cache_backend = getattr(self.cache, 'cache', None)
+        if cache_backend and hasattr(cache_backend, 'scan_iter'):
+            for key in cache_backend.scan_iter(match=f"*{pattern}*"):
                 keys_to_delete.append(key)
-        
-        for key in keys_to_delete:
-            self.cache.delete(key)
+            for key in keys_to_delete:
+                self.cache.delete(key)
+        else:
+            # Para backends sin soporte de scan_iter (ej: SimpleCache), no se puede invalidar por patrón
+            # Se podría advertir o simplemente no hacer nada
+            pass
     
     def get_stats(self) -> Dict[str, Any]:
         """Obtiene estadísticas del caché"""
