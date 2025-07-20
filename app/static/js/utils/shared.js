@@ -353,8 +353,8 @@ async function abrirOverlayCarta(carta) {
                     <a href="${cartaCompleta.image || '/static/images/placeholder-card.png'}" target="_blank">
                         <img src="${cartaCompleta.image || '/static/images/placeholder-card.png'}" 
                              alt="${cartaCompleta.nombre}" 
-                             style="max-height: 400px; width: auto;"
-                             loading="eager">
+                             loading="eager"
+                             class="loaded">
                     </a>
                 </div>
                 <div class="overlay-details">
@@ -677,7 +677,9 @@ function setupLazyImageLoading() {
                 img.classList.add('loaded');
             } else {
                 img.addEventListener('load', function() {
+                    // Asegurarse de que la imagen esté dentro de su contenedor y no flotante
                     this.classList.add('loaded');
+                    this.style.position = 'relative'; // Mantener dentro del flujo del documento
                 }, { once: true });
                 
                 img.addEventListener('error', function() {
