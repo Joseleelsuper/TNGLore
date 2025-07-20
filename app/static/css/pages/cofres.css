@@ -151,15 +151,15 @@
 /* Estilos para visualizar las cartas ganadas */
 #cards-display {
     position: fixed;
-    top: 80px; /* Dejar espacio para el header */
+    top: 0; /* Cubrir toda la página, incluyendo el header */
     left: 0;
     width: 100%;
-    height: calc(100vh - 80px);
+    height: 100vh;
     background: rgba(0, 0, 0, 0.8);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1001;
+    z-index: 999; /* Z-index menor que el overlay de información de carta */
     padding: 2rem;
     box-sizing: border-box;
 }
@@ -168,8 +168,8 @@
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border: 2px solid #4d7cff;
     border-radius: 12px;
-    padding: 2rem;
-    max-width: 1000px;
+    padding: 1.5rem;
+    max-width: 750px; /* Reducido de 1000px para que el contenedor sea más proporcionado */
     width: 100%;
     max-height: calc(100vh - 160px);
     overflow-y: auto;
@@ -186,29 +186,29 @@
 
 #cards-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* Reducido para tarjetas más pequeñas */
+    gap: 1.5rem; /* Reducido el espacio entre tarjetas */
     justify-items: center;
     margin: 1.5rem 0;
 }
 
 .card-item {
     border: 2px solid #dee2e6;
-    padding: 1.5rem;
+    padding: 0.5rem;
     border-radius: 12px;
-    width: 250px;
+    width: 160px; /* Reducido para que sea más compacto */
+    aspect-ratio: 9 / 16;
     box-sizing: border-box;
     overflow: hidden;
     background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
     transition: all 0.3s ease;
     cursor: pointer;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.card-item .card-link {
-    display: block;
-    text-decoration: none;
-    color: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    position: relative; /* Para asegurar que las imágenes se queden dentro */
 }
 
 .card-item:hover {
@@ -219,12 +219,16 @@
 
 .card-item img.card-image {
     width: 100%;
-    height: 200px;
-    object-fit: cover;
+    height: 75%;
+    object-fit: contain; /* Mantener aspect ratio */
     display: block;
     border-radius: 8px;
     transition: transform 0.3s ease;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    max-height: 170px; /* Ajustado a un tamaño más proporcionado */
+    position: relative; /* Asegura que se mantenga en su contenedor */
+    top: 0; /* No flotante */
+    left: 0;
 }
 
 .card-item:hover img.card-image {
@@ -232,11 +236,33 @@
 }
 
 .card-item p {
-    margin: 0.5rem 0 0 0;
+    margin: 0.3rem 0;
     font-weight: bold;
     color: #333;
-    font-size: 1rem;
+    font-size: 0.95rem;
     text-align: center;
+}
+
+.card-info {
+    width: 100%;
+    text-align: center;
+    margin-top: auto; /* Empuja la información hacia abajo */
+}
+
+.card-name {
+    font-weight: bold;
+    font-size: 0.9rem; /* Reducido para tarjetas más pequeñas */
+    margin-bottom: 0.2rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-rarity {
+    font-weight: 600;
+    font-size: 0.8rem; /* Reducido para tarjetas más pequeñas */
+    text-transform: capitalize;
+    margin-top: 0 !important;
 }
 
 /* Botón de cerrar cartas */
@@ -287,18 +313,18 @@
     }
     
     #cards-container {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); /* Reducido para móviles */
+        gap: 1rem;
     }
     
     .card-item {
         width: 100%;
-        max-width: 220px;
-        padding: 1rem;
+        max-width: 130px; /* Reducido para móviles */
+        padding: 0.5rem;
     }
     
     .card-item img.card-image {
-        height: 160px;
+        height: 130px; /* Reducido para móviles */
     }
 }
 
@@ -311,7 +337,7 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.7);
-    z-index: 1000;
+    z-index: 1002; /* Z-index mayor que el cards-display */
     overflow-y: auto;
 }
 
@@ -323,6 +349,9 @@
     width: 80%;
     max-width: 800px;
     position: relative;
+    overflow: hidden; /* Evita que el contenido se desborde */
+    display: flex;
+    flex-direction: column;
 }
 
 .close-btn {
@@ -344,23 +373,34 @@
     display: flex;
     gap: 2rem;
     align-items: flex-start;
+    flex-wrap: wrap; /* Permite que los elementos se ajusten en pantallas pequeñas */
+    max-width: 100%; /* Asegura que no se desborde el contenedor principal */
+    overflow: hidden; /* Contiene todo dentro del overlay */
 }
 
 .overlay-image-container {
     flex: 0 0 auto;
     max-width: 400px;
     margin-right: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Contiene la imagen dentro de su contenedor */
 }
 
 .overlay-image-container img {
     width: 100%;
+    max-width: 100%;
     height: auto;
+    max-height: 500px;
     object-fit: contain;
     transition: transform 0.3s ease;
+    border-radius: 8px; /* Bordes redondeados para la imagen */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Sombra sutil */
 }
 
 .overlay-image-container img:hover {
-    transform: scale(1.05);
+    transform: scale(1.03); /* Reducir ligeramente el efecto de hover */
 }
 
 .overlay-details {
@@ -414,6 +454,8 @@
     .overlay-content {
         width: 95%;
         margin: 2% auto;
+        max-height: 90vh;
+        overflow-y: auto;
     }
 
     .overlay-main {
@@ -424,6 +466,11 @@
         flex: 0 0 100%;
         margin-right: 0;
         max-width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .overlay-image-container img {
+        max-height: 350px;
     }
 
     .overlay-cards {

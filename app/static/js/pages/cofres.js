@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Event listener inicial (se mantiene por si acaso)
+    // Event listeners para manejar el cierre de overlays
     document.addEventListener('click', (e) => {
         if (e.target.id === 'close-cards-btn') {
             cardsDisplay.style.display = 'none';
@@ -151,15 +151,32 @@ document.addEventListener('DOMContentLoaded', () => {
         // Cerrar overlay al hacer clic en el fondo
         if (e.target.id === 'overlay') {
             e.target.style.display = 'none';
+            // Al cerrar el overlay de carta, podemos volver a mostrar las cartas ganadas si estaba visible
+            if (cardsDisplay.innerHTML.includes('Cartas Ganadas')) {
+                cardsDisplay.style.display = 'flex';
+            }
         }
         
         // Cerrar overlay con el botón X
         if (e.target.classList.contains('close-btn')) {
-            document.getElementById('overlay').style.display = 'none';
+            const overlay = e.target.closest('.overlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+                // Al cerrar el overlay de carta, podemos volver a mostrar las cartas ganadas si estaba visible
+                if (cardsDisplay.innerHTML.includes('Cartas Ganadas')) {
+                    cardsDisplay.style.display = 'flex';
+                }
+            }
         }
     });
 
     function mostrarCartas(cards) {
+        // Cerrar cualquier overlay abierto antes de mostrar las cartas
+        const overlays = document.querySelectorAll('.overlay');
+        overlays.forEach(overlay => {
+            overlay.style.display = 'none';
+        });
+        
         cardsDisplay.innerHTML = `
             <div>
                 <h2>Cartas Ganadas</h2>
@@ -173,18 +190,54 @@ document.addEventListener('DOMContentLoaded', () => {
             const div = document.createElement('div');
             div.className = 'card-item';
             
-            // Se muestra la imagen de la carta (o placeholder) dentro de un enlace clicable.
-            const imgSrc = card.image || '/static/images/placeholder-card.png';
-            div.innerHTML = `
-                <a href="#" class="card-link">
-                    <img src="${imgSrc}" alt="${card.nombre}" class="card-image">
-                </a>
-                <p>${card.nombre}</p>
-            `;
+            // Añadir imagen de la carta
+            const img = document.createElement('img');
+            img.className = 'card-image loaded'; // Agregamos 'loaded' directamente para evitar el reposicionamiento
+            // Verificar si tenemos una URL de imagen válida, si no usar una imagen por defecto
+            img.src = card.image || card.image_url || '/static/assets/images/placeholder-card.png';
+            img.alt = card.nombre || 'Carta';
+            img.loading = 'eager'; // Cambiado a eager para carga inmediata
+            img.decoding = 'async'; // Mejora de rendimiento
+            img.style.position = 'relative'; // Forzar posicionamiento relativo
+            img.style.top = '0';
+            img.style.left = '0';
+            div.appendChild(img);
             
-            div.querySelector('.card-link').addEventListener('click', (e) => {
-                e.preventDefault();
-                abrirOverlayCarta(card);
+            // Añadir información básica de la carta
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'card-info';
+            
+            // Mostrar rareza con color correspondiente
+            const rarityColors = {
+                'común': '#b0b0b0',
+                'comun': '#b0b0b0',
+                'raro': '#007bff',
+                'rara': '#007bff',
+                'épico': '#6f42c1',
+                'epico': '#6f42c1',
+                'legendario': '#fd7e14',
+                'legendaria': '#fd7e14'
+            };
+            
+            // Depurar información de la carta
+            console.debug('Datos de la carta:', card);
+            
+            const rareza = card.rareza ? card.rareza.toLowerCase() : 'común';
+            const rarityColor = rarityColors[rareza] || '#b0b0b0';
+            
+            infoDiv.innerHTML = `
+                <p class="card-name">${card.nombre || card.name || 'Carta sin nombre'}</p>
+                <p class="card-rarity" style="color: ${rarityColor};">${card.rareza || card.rarity || 'Común'}</p>
+            `;
+            div.appendChild(infoDiv);
+            
+            // Hacer clicable para mostrar detalles
+            div.addEventListener('click', (e) => {
+                e.stopPropagation(); // Evitar que el clic se propague al fondo
+                // Primero oculta el overlay de cartas ganadas
+                cardsDisplay.style.display = 'none';
+                // Luego abre el overlay con la información de la carta
+                setTimeout(() => abrirOverlayCarta(card), 100);
             });
             
             cardsContainer.appendChild(div);
