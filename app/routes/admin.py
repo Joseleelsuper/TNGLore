@@ -51,6 +51,7 @@ def get_all_collections_cached():
 
 
 @cache.memoize(timeout=300)  # 5 minutos de caché
+@admin_required
 def get_all_users_cached():
     """Obtiene todos los usuarios con caché para admin"""
     try:
@@ -92,7 +93,6 @@ def admin_panel():
 
 @admin_bp.route("/api/cartas", methods=['GET'])
 @login_required
-@admin_required
 def api_cartas():
     """API para obtener cartas con caché"""
     try:
@@ -143,7 +143,6 @@ def api_cartas():
 
 @admin_bp.route("/api/collections", methods=['GET'])
 @login_required
-@admin_required
 def api_collections():
     """API para obtener colecciones con caché"""
     try:
@@ -169,7 +168,6 @@ def api_users():
 
 @admin_bp.route("/api/cartas/<id>", methods=["GET"])
 @login_required
-@admin_required
 def obtener_carta(id):
     try:
         carta = mongo.collectables.find_one({"_id": ObjectId(id)})

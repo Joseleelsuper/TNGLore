@@ -191,42 +191,6 @@ class ImageOptimizer {
     }
 
     /**
-     * Procesa todas las imágenes de la página para lazy loading
-     */
-    processPageImages() {
-        // Temporalmente desactivado para debugging
-        // const images = document.querySelectorAll('img[data-src]');
-        // images.forEach(img => this.observeImage(img));
-
-        // // También procesar imágenes con loading="lazy"
-        // const lazyImages = document.querySelectorAll('img[loading="lazy"]:not([data-src])');
-        // lazyImages.forEach(img => {
-        //     if (img.src) {
-        //         img.setAttribute('data-src', img.src);
-        //         img.removeAttribute('src');
-        //         this.observeImage(img);
-        //     }
-        // });
-    }
-
-    /**
-     * Optimiza imágenes de cartas específicamente
-     * @param {HTMLElement} container - Contenedor de cartas
-     */
-    optimizeCardImages(container) {
-        // Temporalmente desactivado para debugging
-        // const cardImages = container.querySelectorAll('.card-image, .carta-image, .carta img');
-        
-        // cardImages.forEach(img => {
-        //     if (!img.hasAttribute('data-src') && img.src) {
-        //         img.setAttribute('data-src', img.src);
-        //         img.removeAttribute('src');
-        //         this.observeImage(img);
-        //     }
-        // });
-    }
-
-    /**
      * Obtiene estadísticas del caché
      * @returns {Object} Estadísticas del caché
      */
