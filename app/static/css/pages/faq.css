@@ -38,5 +38,9 @@ a {
 }
 
 a:hover {
+    text-decoration: none;
+}
+
+#abrir-cofres-info {
     text-decoration: underline;
 }
