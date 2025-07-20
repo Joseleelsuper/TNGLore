@@ -14,7 +14,7 @@
 
     <!-- Contenido principal -->
     <main>
-        <h1>⠀⠀⠀</h1>
+        {% if coleccion and coleccion|length > 0 %}
         <!-- Controles de ordenación -->
         <div id="sorting-controls">
             <label for="sort-select">Ordenar por:</label>
@@ -24,10 +24,15 @@
             </select>
         </div>
         <!-- Contenedor para servidores y sus cartas -->
-        <div id="guilds-container"></div>
+            <div id="guilds-container"></div>
+        {% else %}
+            <div id="no-cards-message">
+                <p id="no-cards-text">No tienes cartas en tu colección todavía.</p>
+            </div>
+        {% endif %}
     </main>
 
-    <!-- Overlay (igual que en admin) -->
+    <!-- Overlay -->
     <div id="overlay" class="overlay" style="display: none;">
         <div class="overlay-content">
             <span class="close-btn">&times;</span>
