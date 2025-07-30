@@ -91,34 +91,93 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!chestType || !server) return;
         
+        // Mostrar indicador de carga
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.className = 'loading-overlay';
+        loadingOverlay.innerHTML = `
+            <div class="spinner"></div>
+            <div class="loading-text">Abriendo cofre...</div>
+        `;
+        document.body.appendChild(loadingOverlay);
+        
+        // Deshabilitar el cofre temporalmente para evitar clics múltiples
+        chestCard.classList.add('disabled');
+        
         try {
+            // Implementar un timeout en el cliente para evitar esperas muy largas
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 segundos de timeout
+            
             const response = await fetch('/api/open_chests', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chest_type: chestType, server })
-            });
+                body: JSON.stringify({ chest_type: chestType, server }),
+                signal: controller.signal
+            }).finally(() => clearTimeout(timeoutId));
             
+            // Verificar si la respuesta es JSON
             const contentType = response.headers.get("content-type") || "";
             if (!contentType.includes("application/json")) {
-                const text = await response.text();
-                console.error("Response not JSON:", text);
-                alert('Error en el servidor');
-                return;
+                // Intentar manejar errores no JSON (como 504 Gateway Timeout)
+                if (response.status === 504) {
+                    console.error("Timeout en el servidor. Reintentando...");
+                    // Reintentar automáticamente una vez con un nuevo fetch
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    const retryResponse = await fetch('/api/open_chests', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ chest_type: chestType, server }),
+                    });
+                    
+                    if (!retryResponse.ok || !retryResponse.headers.get("content-type")?.includes("application/json")) {
+                        throw new Error("Error después de reintento");
+                    }
+                    
+                    const data = await retryResponse.json();
+                    processChestResults(data, chestCard);
+                } else {
+                    const text = await response.text();
+                    console.error("Response not JSON:", text);
+                    alert('Error en el servidor. Por favor, inténtalo de nuevo más tarde.');
+                }
+            } else {
+                // Procesamiento normal de respuesta JSON
+                const data = await response.json();
+                if (!response.ok) {
+                    alert(data.error || 'Error al abrir cofre');
+                } else {
+                    processChestResults(data, chestCard);
+                }
             }
-            
-            const data = await response.json();
-            if (!response.ok) {
-                alert(data.error || 'Error al abrir cofre');
-                return;
+        } catch (error) {
+            console.error('Error:', error);
+            if (error.name === 'AbortError') {
+                alert('La operación tomó demasiado tiempo. Por favor, inténtalo de nuevo.');
+            } else {
+                alert('Ocurrió un error al abrir el cofre. Por favor, inténtalo de nuevo.');
             }
-            
-            mostrarCartas(data.results.cards);
-            
-            let count = parseInt(chestCard.dataset.count);
-            count = Math.max(count - 1, 0);
-            chestCard.dataset.count = count;
-            
-            if (count === 0) {
+        } finally {
+            // Eliminar indicador de carga y habilitar el cofre nuevamente
+            document.body.removeChild(loadingOverlay);
+            chestCard.classList.remove('disabled');
+        }
+    });
+    
+    // Función para procesar los resultados de abrir un cofre
+    function processChestResults(data, chestCard) {
+        // Mostrar las cartas obtenidas
+        mostrarCartas(data.results.cards);
+        
+        // Actualizar el contador de cofres
+        let count = parseInt(chestCard.dataset.count);
+        count = Math.max(count - 1, 0);
+        chestCard.dataset.count = count;
+        
+        if (count === 0) {
+            // Animación de desvanecimiento antes de eliminar
+            chestCard.classList.add('fade-out');
+            setTimeout(() => {
                 chestCard.remove();
                 
                 // Verificar si el contenedor del servidor está vacío y eliminarlo si es necesario
@@ -126,16 +185,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (chestsContainer && chestsContainer.children.length === 0) {
                     const serverSection = chestsContainer.closest('.server-section');
                     if (serverSection) {
-                        serverSection.remove();
+                        serverSection.classList.add('fade-out');
+                        setTimeout(() => serverSection.remove(), 300);
                     }
                 }
-            } else {
-                chestCard.querySelector('.chest-count').textContent = count;
-            }
-        } catch (error) {
-            console.error('Error:', error);
+            }, 300);
+        } else {
+            // Actualizar el contador visualmente
+            const countElement = chestCard.querySelector('.chest-count');
+            const oldCount = parseInt(countElement.textContent);
+            
+            // Pequeña animación para el cambio de número
+            countElement.classList.add('count-change');
+            setTimeout(() => {
+                countElement.textContent = count;
+                setTimeout(() => countElement.classList.remove('count-change'), 300);
+            }, 150);
         }
-    });
+    }
 
     // Event listeners para manejar el cierre de overlays
     document.addEventListener('click', (e) => {
@@ -180,10 +247,57 @@ document.addEventListener('DOMContentLoaded', () => {
         cardsDisplay.innerHTML = `
             <div>
                 <h2>Cartas Ganadas</h2>
-                <div id="cards-container"></div>
+                <div id="cards-container" class="cards-grid"></div>
                 <button id="close-cards-btn">Cerrar</button>
             </div>
         `;
+        
+        // Referencia al contenedor de cartas (ya definida globalmente)
+        
+        // Mostrar cada carta con una animación secuencial
+        cards.forEach((card, index) => {
+            // Determinar la clase de rareza para estilizar la carta
+            const rarezaClass = `rareza-${card.rareza || 'comun'}`;
+            
+            // Crear elemento de carta con información y estilo
+            const cardElement = document.createElement('div');
+            cardElement.className = `card ${rarezaClass}`;
+            cardElement.style.animationDelay = `${index * 0.3}s`; // Secuencia de aparición
+            
+            // Contenido de la carta
+            cardElement.innerHTML = `
+                <div class="card-inner">
+                    <div class="card-front">
+                        <h3>${card.nombre || 'Carta sin nombre'}</h3>
+                        <div class="card-image">
+                            <img src="${card.imagen || '/assets/images/card-placeholder.png'}" alt="${card.nombre || 'Carta'}">
+                        </div>
+                        <div class="card-rareza">${card.rareza || 'común'}</div>
+                        <div class="card-description">${card.descripcion || 'Sin descripción'}</div>
+                    </div>
+                </div>
+            `;
+            
+            // Agregar al contenedor con un efecto de revelación
+            cardsContainer.appendChild(cardElement);
+            
+            // Aplicar animación después de agregar al DOM
+            setTimeout(() => {
+                cardElement.classList.add('card-reveal');
+            }, 50 + (index * 300)); // Espera escalonada para cada carta
+        });
+        
+        // Mostrar el display de cartas
+        cardsDisplay.style.display = 'flex';
+        
+        // Añadir efectos de sonido para la revelación de cartas
+        try {
+            const audio = new Audio('/assets/sounds/card-reveal.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(err => console.log('Error al reproducir sonido:', err));
+        } catch (e) {
+            console.log('Sonido no disponible');
+        }
         
         const cardsContainer = document.getElementById('cards-container');
         cards.forEach(card => {
