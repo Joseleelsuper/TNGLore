@@ -126,6 +126,9 @@
     height: 40px;
     border-radius: 50%;
     object-fit: cover;
+    flex-shrink: 0;
+    aspect-ratio: 1 / 1;
+    display: block;
 }
 
 .guild-title {

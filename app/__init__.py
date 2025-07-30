@@ -95,10 +95,3 @@ def create_app():
         return {"error": "Not available in production"}, 404
 
     return app
-    app.register_blueprint(admin_bp)
-    app.register_blueprint(chest_bp)
-    app.register_blueprint(collections_bp)
-    app.register_blueprint(perfil_bp)
-    app.register_blueprint(faq_bp)
-
-    return app

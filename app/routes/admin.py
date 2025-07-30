@@ -91,8 +91,9 @@ def admin_panel():
     return render_template("pages/admin.html", user=current_user, images=get_images())
 
 
-@admin_bp.route("/api/cartas", methods=['GET'])
+@admin_bp.route("/api/admin/cartas", methods=['GET'])
 @login_required
+@admin_required
 def api_cartas():
     """API para obtener cartas con caché"""
     try:
@@ -166,8 +167,9 @@ def api_users():
         return jsonify({'error': 'Error interno del servidor'}), 500
 
 
-@admin_bp.route("/api/cartas/<id>", methods=["GET"])
+@admin_bp.route("/api/admin/cartas/<id>", methods=["GET"])
 @login_required
+@admin_required
 def obtener_carta(id):
     try:
         carta = mongo.collectables.find_one({"_id": ObjectId(id)})
@@ -224,7 +226,7 @@ def obtener_colecciones():
         return jsonify({"error": "Error interno del servidor"}), 500
 
 
-@admin_bp.route("/api/cartas", methods=["POST"])
+@admin_bp.route("/api/admin/cartas", methods=["POST"])
 @login_required
 @admin_required
 def crear_carta():
@@ -263,7 +265,7 @@ def crear_carta():
         return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
 
 
-@admin_bp.route("/api/cartas/<id>", methods=["PUT"])
+@admin_bp.route("/api/admin/cartas/<id>", methods=["PUT"])
 @login_required
 @admin_required
 def actualizar_carta(id):
@@ -570,7 +572,7 @@ def delete_from_github(path):
     return False
 
 
-@admin_bp.route("/api/cartas/<id>", methods=["DELETE"])
+@admin_bp.route("/api/admin/cartas/<id>", methods=["DELETE"])
 @login_required
 @admin_required
 def eliminar_carta(id):

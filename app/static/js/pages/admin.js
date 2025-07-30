@@ -101,7 +101,7 @@ function cerrarModal() {
 
 async function cargarCartas() {
     try {
-        const cartas = await fetchData('/api/cartas');
+        const cartas = await fetchData('/api/admin/cartas');
         renderizarLista('cartas-list', cartas, crearElementoCarta);
     } catch (error) {
         console.error('Error al cargar cartas:', error);
@@ -288,7 +288,7 @@ async function manejarSubmitCarta(event) {
     const form = event.target;
     const formData = new FormData(form);
     const cartaId = form.getAttribute('data-id');
-    const url = cartaId ? `/api/cartas/${cartaId}` : '/api/cartas';
+    const url = cartaId ? `/api/admin/cartas/${cartaId}` : '/api/admin/cartas';
     const method = cartaId ? 'PUT' : 'POST';
 
     // Asegurarnos de que tenemos un valor válido para la colección
@@ -399,7 +399,7 @@ async function manejarSubmitUsuario(event) {
 
 function eliminarCarta(id) {
     if (confirm('¿Estás seguro de que quieres eliminar esta carta?')) {
-        fetchData(`/api/cartas/${id}`, 'DELETE')
+        fetchData(`/api/admin/cartas/${id}`, 'DELETE')
             .then(() => cargarCartas())
             .catch(error => console.error('Error al eliminar carta:', error));
     }
@@ -529,11 +529,11 @@ async function abrirOverlayColeccion(coleccion) {
 
 async function obtenerCartasRelacionadas(coleccionId) {
     if (!coleccionId) return [];
-    return await fetchData(`/api/cartas?coleccion=${coleccionId}`);
+    return await fetchData(`/api/admin/cartas?coleccion=${coleccionId}`);
 }
 
 async function obtenerCartasColeccion(coleccionId) {
-    return await fetchData(`/api/cartas?coleccion=${coleccionId}`);
+    return await fetchData(`/api/admin/cartas?coleccion=${coleccionId}`);
 }
 
 async function obtenerOtrasColecciones(coleccionId) {
