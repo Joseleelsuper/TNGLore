@@ -252,69 +252,22 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         
-        // Referencia al contenedor de cartas (ya definida globalmente)
+        // Obtener referencia al contenedor de cartas después de crearlo
+        const newCardsContainer = document.getElementById('cards-container');
         
         // Mostrar cada carta con una animación secuencial
         cards.forEach((card, index) => {
-            // Determinar la clase de rareza para estilizar la carta
-            const rarezaClass = `rareza-${card.rareza || 'comun'}`;
-            
-            // Crear elemento de carta con información y estilo
-            const cardElement = document.createElement('div');
-            cardElement.className = `card ${rarezaClass}`;
-            cardElement.style.animationDelay = `${index * 0.3}s`; // Secuencia de aparición
-            
-            // Contenido de la carta
-            cardElement.innerHTML = `
-                <div class="card-inner">
-                    <div class="card-front">
-                        <h3>${card.nombre || 'Carta sin nombre'}</h3>
-                        <div class="card-image">
-                            <img src="${card.imagen || '/assets/images/card-placeholder.png'}" alt="${card.nombre || 'Carta'}">
-                        </div>
-                        <div class="card-rareza">${card.rareza || 'común'}</div>
-                        <div class="card-description">${card.descripcion || 'Sin descripción'}</div>
-                    </div>
-                </div>
-            `;
-            
-            // Agregar al contenedor con un efecto de revelación
-            cardsContainer.appendChild(cardElement);
-            
-            // Aplicar animación después de agregar al DOM
-            setTimeout(() => {
-                cardElement.classList.add('card-reveal');
-            }, 50 + (index * 300)); // Espera escalonada para cada carta
-        });
-        
-        // Mostrar el display de cartas
-        cardsDisplay.style.display = 'flex';
-        
-        // Añadir efectos de sonido para la revelación de cartas
-        try {
-            const audio = new Audio('/assets/sounds/card-reveal.mp3');
-            audio.volume = 0.5;
-            audio.play().catch(err => console.log('Error al reproducir sonido:', err));
-        } catch (e) {
-            console.log('Sonido no disponible');
-        }
-        
-        const cardsContainer = document.getElementById('cards-container');
-        cards.forEach(card => {
             const div = document.createElement('div');
             div.className = 'card-item';
             
             // Añadir imagen de la carta
             const img = document.createElement('img');
-            img.className = 'card-image loaded'; // Agregamos 'loaded' directamente para evitar el reposicionamiento
+            img.className = 'card-image loaded';
             // Verificar si tenemos una URL de imagen válida, si no usar una imagen por defecto
-            img.src = card.image || card.image_url || '/static/assets/images/placeholder-card.png';
+            img.src = card.image || card.image_url || '/static/assets/images/placeholder-card.svg';
             img.alt = card.nombre || 'Carta';
-            img.loading = 'eager'; // Cambiado a eager para carga inmediata
-            img.decoding = 'async'; // Mejora de rendimiento
-            img.style.position = 'relative'; // Forzar posicionamiento relativo
-            img.style.top = '0';
-            img.style.left = '0';
+            img.loading = 'eager';
+            img.decoding = 'async';
             div.appendChild(img);
             
             // Añadir información básica de la carta
@@ -333,9 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 'legendaria': '#fd7e14'
             };
             
-            // Depurar información de la carta
-            console.debug('Datos de la carta:', card);
-            
             const rareza = card.rareza ? card.rareza.toLowerCase() : 'común';
             const rarityColor = rarityColors[rareza] || '#b0b0b0';
             
@@ -347,14 +297,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Hacer clicable para mostrar detalles
             div.addEventListener('click', (e) => {
-                e.stopPropagation(); // Evitar que el clic se propague al fondo
-                // Primero oculta el overlay de cartas ganadas
+                e.stopPropagation();
                 cardsDisplay.style.display = 'none';
-                // Luego abre el overlay con la información de la carta
                 setTimeout(() => abrirOverlayCarta(card), 100);
             });
             
-            cardsContainer.appendChild(div);
+            newCardsContainer.appendChild(div);
         });
 
         // Re-añadir event listeners
@@ -362,6 +310,16 @@ document.addEventListener('DOMContentLoaded', () => {
             cardsDisplay.style.display = 'none';
         });
         
+        // Mostrar el display de cartas
         cardsDisplay.style.display = 'flex';
+        
+        // Añadir efectos de sonido para la revelación de cartas
+        try {
+            const audio = new Audio('/assets/sounds/card-reveal.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(err => console.log('Error al reproducir sonido:', err));
+        } catch (e) {
+            console.log('Sonido no disponible');
+        }
     }
 });

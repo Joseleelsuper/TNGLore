@@ -225,7 +225,7 @@ function crearElementoCarta(carta) {
     div.dataset.carta = JSON.stringify(carta);
     div.innerHTML = `
         <div class="card-image-container">
-            <img src="${carta.image || '/static/images/placeholder-card.png'}" alt="${carta.nombre}" class="card-image">
+            <img src="${carta.image || '/static/assets/images/placeholder-card.svg'}" alt="${carta.nombre}" class="card-image">
         </div>
         <div class="card-content">
             <h3 class="card-title">${carta.nombre}</h3>
@@ -507,7 +507,7 @@ async function abrirOverlayColeccion(coleccion) {
     const cartasColeccionContainer = document.getElementById('cartas-coleccion-container');
     cartasColeccionContainer.innerHTML = cartasColeccion.map(c => `
         <div class="overlay-card" onclick="abrirOverlayCarta(${JSON.stringify(c).replace(/"/g, '&quot;')})">
-            <img src="${c.image || '/static/images/placeholder-card.png'}" alt="${c.nombre}">
+            <img src="${c.image || '/static/assets/images/placeholder-card.svg'}" alt="${c.nombre}">
             <p>${c.nombre}</p>
         </div>
     `).join('');
