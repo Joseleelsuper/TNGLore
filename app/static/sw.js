@@ -1,7 +1,8 @@
 // Service Worker para caché de imágenes y recursos estáticos
 
-const CACHE_NAME = 'tnglore-cache-v1';
-const IMAGE_CACHE_NAME = 'tnglore-images-v1';
+const CACHE_NAME = 'tnglore-cache-v2';
+const IMAGE_CACHE_NAME = 'tnglore-images-v2';
+const CARD_CACHE_NAME = 'tnglore-cards-v1';
 
 // Recursos para cachear inmediatamente
 const STATIC_RESOURCES = [
@@ -13,7 +14,14 @@ const STATIC_RESOURCES = [
 // Patrones de URLs de imágenes para cachear
 const IMAGE_PATTERNS = [
     /\.(?:png|jpg|jpeg|svg|webp|gif)$/i,
-    /cdn\.jsdelivr\.net.*\.(png|jpg|jpeg|svg|webp|gif)/i
+    /cdn\.jsdelivr\.net.*\.(png|jpg|jpeg|svg|webp|gif)/i,
+    /assets\/images\/cofre-.*\.webp/i
+];
+
+// Patrones específicos para imágenes de cartas
+const CARD_PATTERNS = [
+    /assets\/collections\/.*\.(png|jpg|jpeg|webp)/i,
+    /collections\/.*\/.*\.(png|jpg|jpeg|webp)/i
 ];
 
 // Instalar Service Worker

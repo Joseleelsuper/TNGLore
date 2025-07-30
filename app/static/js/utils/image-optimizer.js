@@ -218,6 +218,56 @@ class ImageOptimizer {
         });
         this.cache.clear();
     }
+
+    /**
+     * Procesa todas las imágenes de la página para lazy loading
+     */
+    processPageImages() {
+        // Buscar todas las imágenes con data-src para lazy loading
+        const lazyImages = document.querySelectorAll('img[data-src]');
+        lazyImages.forEach(img => {
+            this.observeImage(img);
+        });
+
+        // Procesar imágenes existentes sin data-src
+        const regularImages = document.querySelectorAll('img:not([data-src])');
+        regularImages.forEach(img => {
+            if (!img.complete && img.src) {
+                this.showPlaceholder(img);
+                img.addEventListener('load', () => {
+                    img.classList.add('loaded');
+                }, { once: true });
+                img.addEventListener('error', () => {
+                    this.showErrorPlaceholder(img);
+                }, { once: true });
+            } else if (img.complete) {
+                img.classList.add('loaded');
+            }
+        });
+    }
+
+    /**
+     * Optimiza imágenes de cartas en un contenedor específico
+     * @param {HTMLElement} container - Contenedor de cartas
+     */
+    optimizeCardImages(container) {
+        if (!container) return;
+        
+        const cardImages = container.querySelectorAll('.card-image, .carta-card img, .chest-card img');
+        cardImages.forEach(img => {
+            if (img.hasAttribute('data-src')) {
+                this.observeImage(img);
+            } else if (!img.complete && img.src) {
+                this.showPlaceholder(img);
+                img.addEventListener('load', () => {
+                    img.classList.add('loaded');
+                }, { once: true });
+                img.addEventListener('error', () => {
+                    this.showErrorPlaceholder(img);
+                }, { once: true });
+            }
+        });
+    }
 }
 
 // Instancia global del optimizador de imágenes

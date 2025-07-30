@@ -56,7 +56,7 @@ function renderGuildCards(guild, cards, sortCriterio) {
         div.dataset.carta = JSON.stringify(carta);
         div.innerHTML = `
             <div class="card-image-container" style="position: relative;">
-                <img src="${carta.image || '/static/images/placeholder-card.png'}" alt="${carta.nombre}" class="card-image">
+                <img src="${carta.image || '/static/assets/images/placeholder-card.svg'}" alt="${carta.nombre}" class="card-image">
                 ${ countMap[carta._id] > 1 ? `<span class="card-count">${countMap[carta._id]}</span>` : '' }
             </div>
             <div class="card-content">

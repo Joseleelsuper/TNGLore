@@ -229,7 +229,7 @@ function crearElementoCarta(carta) {
 
     div.innerHTML = `
         <div class="card-image-container">
-            <img src="${carta.image || '/static/images/placeholder-card.png'}" 
+            <img src="${carta.image || '/static/assets/images/placeholder-card.svg'}" 
                  alt="${carta.nombre}" 
                  class="card-image"
                  loading="lazy"
@@ -350,8 +350,8 @@ async function abrirOverlayCarta(carta) {
             <span class="close-btn">&times;</span>
             <div class="overlay-main">
                 <div class="overlay-image-container">
-                    <a href="${cartaCompleta.image || '/static/images/placeholder-card.png'}" target="_blank">
-                        <img src="${cartaCompleta.image || '/static/images/placeholder-card.png'}" 
+                    <a href="${cartaCompleta.image || '/static/assets/images/placeholder-card.svg'}" target="_blank">
+                        <img src="${cartaCompleta.image || '/static/assets/images/placeholder-card.svg'}" 
                              alt="${cartaCompleta.nombre}" 
                              loading="eager"
                              class="loaded">
@@ -392,7 +392,7 @@ async function abrirOverlayCarta(carta) {
                             cartasRelacionadasContainer.innerHTML = cartasFiltradas
                                 .map(c => `
                                     <div class="overlay-card" onclick="window.abrirOverlayCarta(${JSON.stringify(c).replace(/"/g, '&quot;')})">
-                                        <img src="${c.image || '/static/images/placeholder-card.png'}" 
+                                        <img src="${c.image || '/static/assets/images/placeholder-card.svg'}" 
                                              alt="${c.nombre}"
                                              loading="eager"
                                              class="loaded">
@@ -547,7 +547,7 @@ async function abrirOverlayColeccion(coleccion) {
                             const cartaJSON = JSON.stringify(c).replace(/"/g, '&quot;');
                             return `
                                 <div class="overlay-card" onclick="window.abrirOverlayCarta(${cartaJSON})">
-                                    <img src="${c.image || '/static/images/placeholder-card.png'}" 
+                                    <img src="${c.image || '/static/assets/images/placeholder-card.svg'}" 
                                          alt="${c.nombre}"
                                          loading="eager"
                                          class="loaded">
