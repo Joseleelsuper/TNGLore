@@ -10,6 +10,7 @@ else:
 class Config:
     MONGODB_URI = os.getenv('MONGODB_URI')
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev')
+    REDIS_URL = os.getenv('REDIS_URL')  # Upstash Redis para caché compartida en Vercel
     
     # Configuración de sesión
     PERMANENT_SESSION_LIFETIME = timedelta(hours=1)  # Duración máxima de inactividad

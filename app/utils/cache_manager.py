@@ -73,73 +73,20 @@ class CacheManager:
         }
 
 
-class ImageCacheManager:
-    """Gestor específico para caché de imágenes"""
+def create_cache_config() -> Dict[str, Any]:
+    """Crea la configuración del caché según el entorno.
     
-    def __init__(self, cache_manager: CacheManager):
-        self.cache_manager = cache_manager
-        self.image_cache_timeout = 3600  # 1 hora
-        self.config_cache_timeout = 1800  # 30 minutos
+    Auto-detecta Redis si REDIS_URL está definida. Esto es crítico
+    para Vercel serverless, donde SimpleCache se pierde en cold starts.
+    """
+    redis_url = os.getenv('REDIS_URL')
+    cache_type = os.getenv('CACHE_TYPE', '')
     
-    @property
-    def cached_images(self):
-        """Decorador para cachear configuración de imágenes"""
-        return self.cache_manager.cached_result(
-            timeout=self.config_cache_timeout,
-            key_prefix="images"
-        )
-    
-    @property
-    def cached_collections(self):
-        """Decorador para cachear datos de colecciones"""
-        return self.cache_manager.cached_result(
-            timeout=self.image_cache_timeout,
-            key_prefix="collections"
-        )
-    
-    def get_optimized_image_url(self, base_url: str, size: str = "medium") -> str:
-        """Genera URLs optimizadas para imágenes según el tamaño"""
-        size_params = {
-            "thumbnail": "?w=150&h=150&fit=crop",
-            "small": "?w=300&h=300&fit=crop", 
-            "medium": "?w=600&h=600&fit=crop",
-            "large": "?w=1200&h=1200&fit=crop"
-        }
-        
-        param = size_params.get(size, size_params["medium"])
-        return f"{base_url}{param}"
-    
-    def preload_critical_images(self, image_urls: list) -> dict:
-        """Precarga imágenes críticas y devuelve metadatos"""
-        preload_data = {}
-        for url in image_urls:
-            cache_key = self.cache_manager.get_cache_key("image_meta", url)
-            cached_meta = self.cache_manager.cache.get(cache_key)
-            
-            if not cached_meta:
-                # Simular metadatos (en producción podrías obtener tamaño real, etc.)
-                meta = {
-                    'url': url,
-                    'loading': 'eager',
-                    'sizes': '(max-width: 768px) 100vw, 50vw',
-                    'preload': True
-                }
-                self.cache_manager.cache.set(cache_key, meta, timeout=self.image_cache_timeout)
-                preload_data[url] = meta
-            else:
-                preload_data[url] = cached_meta
-        
-        return preload_data
-
-
-def create_cache_config():
-    """Crea la configuración del caché según el entorno"""
-    cache_type = os.getenv('CACHE_TYPE', 'simple')
-    
-    if cache_type == 'redis':
+    # Auto-detect: si hay REDIS_URL, usar Redis aunque no se pida explícitamente
+    if redis_url or cache_type == 'redis':
         return {
             'CACHE_TYPE': 'RedisCache',
-            'CACHE_REDIS_URL': os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
+            'CACHE_REDIS_URL': redis_url or 'redis://localhost:6379/0',
             'CACHE_DEFAULT_TIMEOUT': 300
         }
     elif cache_type == 'filesystem':
@@ -149,7 +96,7 @@ def create_cache_config():
             'CACHE_DEFAULT_TIMEOUT': 300
         }
     else:
-        # Caché en memoria para desarrollo
+        # Caché en memoria para desarrollo local
         return {
             'CACHE_TYPE': 'SimpleCache',
             'CACHE_DEFAULT_TIMEOUT': 300

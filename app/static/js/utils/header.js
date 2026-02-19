@@ -31,23 +31,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Mostrar el panel de administrador si el usuario es administrador
-    fetch('/api/user')
-        .then(response => response.json())
-        .then(data => {
-            if (data.is_admin) {
-                document.getElementById('admin-panel').style.display = 'flex';
-            }
-            // Actualizar imagen de perfil
-            const profileIcon = document.getElementById('profile-icon');
-            if (data.pfp && data.pfp !== 'None') {
-                profileIcon.src = data.pfp;
-            } else {
-                // Ruta al ícono por defecto de Google Material Icons
-                profileIcon.src = 'https://fonts.gstatic.com/s/i/materialicons/person/v6/24px.svg';
-            }
-            profileIcon.style.width = '48px';
-            profileIcon.style.height = '48px';
-        })
-        .catch(error => console.error('Error al obtener información del usuario:', error));
+    // Usar datos inlineados desde el servidor (sin fetch extra)
+    const userData = window.__USER__ || {};
+
+    if (userData.isAdmin) {
+        const adminPanel = document.getElementById('admin-panel');
+        if (adminPanel) adminPanel.style.display = 'flex';
+    }
+
+    const profileIcon = document.getElementById('profile-icon');
+    if (profileIcon) {
+        if (userData.pfp && userData.pfp !== 'None') {
+            profileIcon.src = userData.pfp;
+        } else {
+            profileIcon.src = 'https://fonts.gstatic.com/s/i/materialicons/person/v6/24px.svg';
+        }
+        profileIcon.style.width = '48px';
+        profileIcon.style.height = '48px';
+    }
 });

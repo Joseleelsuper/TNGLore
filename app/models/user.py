@@ -1,6 +1,33 @@
 from flask_login import UserMixin
 from app import mongo, bcrypt, login_manager
 from bson.objectid import ObjectId
+from typing import Optional, List, Dict, Any
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Caché in-process para user_loader (evita hit a MongoDB en cada request)
+# En Vercel serverless se pierde en cold starts, pero dentro de una misma
+# instancia (que puede manejar múltiples requests) ahorra ~50-200ms/req.
+_user_cache: Dict[str, Dict[str, Any]] = {}
+_USER_CACHE_MAX = 200  # Máximo de usuarios en caché
+
+
+def _cache_user(user_id: str, user_data: Dict[str, Any]) -> None:
+    """Almacena datos de usuario en caché in-process."""
+    if len(_user_cache) >= _USER_CACHE_MAX:
+        # Evictar la primera entrada (FIFO simple)
+        try:
+            first_key = next(iter(_user_cache))
+            del _user_cache[first_key]
+        except StopIteration:
+            pass
+    _user_cache[user_id] = user_data
+
+
+def invalidate_user_cache(user_id: str) -> None:
+    """Invalida la caché de un usuario específico. Llamar tras update de perfil."""
+    _user_cache.pop(str(user_id), None)
 
 
 class User(UserMixin):
@@ -32,62 +59,54 @@ class User(UserMixin):
         return str(self._id)
 
     @staticmethod
-    def get_by_id(user_id):
+    def get_by_id(user_id: str) -> Optional['User']:
+        """Obtiene un usuario por su ID, usando caché in-process."""
+        user_id_str = str(user_id)
+        
+        # Intentar caché primero
+        cached = _user_cache.get(user_id_str)
+        if cached is not None:
+            return User._from_dict(cached)
+        
         try:
             user_data = mongo.users.find_one({"_id": ObjectId(user_id)})
             if user_data:
-                return User(
-                    username=user_data["username"],
-                    email=user_data["email"],
-                    password=user_data["password"],
-                    _id=user_data["_id"],
-                    is_admin=user_data.get("is_admin", False),
-                    discord_id=user_data.get("discord_id"),
-                    pfp=user_data.get("pfp"),
-                    guilds=user_data.get("guilds", []),
-                    chests=user_data.get("chests", []),
-                    registration_method=user_data.get("registration_method", "Normal"),
-                )
+                _cache_user(user_id_str, user_data)
+                return User._from_dict(user_data)
         except Exception as e:
-            print(f"Error en get_by_id: {e}")
-            return None
+            logger.error(f"Error en get_by_id: {e}")
+        return None
+    
+    @staticmethod
+    def _from_dict(user_data: Dict[str, Any]) -> 'User':
+        """Construye un User desde un dict de MongoDB."""
+        return User(
+            username=user_data["username"],
+            email=user_data["email"],
+            password=user_data.get("password"),
+            _id=user_data["_id"],
+            is_admin=user_data.get("is_admin", False),
+            discord_id=user_data.get("discord_id"),
+            pfp=user_data.get("pfp"),
+            guilds=user_data.get("guilds", []),
+            chests=user_data.get("chests", []),
+            registration_method=user_data.get("registration_method", "Normal"),
+        )
 
     @staticmethod
-    def get_by_username(username):
+    def get_by_username(username: str) -> Optional['User']:
         user_data = mongo.users.find_one(
             {"$or": [{"username": username}, {"email": username}]}
         )
         if user_data:
-            return User(
-                username=user_data["username"],
-                email=user_data["email"],
-                password=user_data["password"],
-                _id=user_data["_id"],
-                is_admin=user_data.get("is_admin", False),
-                discord_id=user_data.get("discord_id"),
-                pfp=user_data.get("pfp"),
-                guilds=user_data.get("guilds", []),
-                chests=user_data.get("chests", []),
-                registration_method=user_data.get("registration_method", "Normal"),
-            )
+            return User._from_dict(user_data)
         return None
 
     @staticmethod
-    def get_by_discord_id(discord_id):
+    def get_by_discord_id(discord_id: str) -> Optional['User']:
         user_data = mongo.users.find_one({"discord_id": discord_id})
         if user_data:
-            return User(
-                username=user_data["username"],
-                email=user_data["email"],
-                password=user_data.get("password"),
-                _id=user_data["_id"],
-                is_admin=user_data.get("is_admin", False),
-                discord_id=user_data.get("discord_id"),
-                pfp=user_data.get("pfp"),
-                guilds=user_data.get("guilds", []),
-                chests=user_data.get("chests", []),
-                registration_method=user_data.get("registration_method", "Normal"),
-            )
+            return User._from_dict(user_data)
         return None
 
     @staticmethod
@@ -135,15 +154,10 @@ class User(UserMixin):
         return bcrypt.check_password_hash(self.password, password)
     
     @staticmethod
-    def get_by_email(email):
+    def get_by_email(email: str) -> Optional['User']:
         user_data = mongo.users.find_one({'email': email})
         if user_data:
-            return User(
-                username=user_data["username"],
-                email=user_data["email"],
-                password=user_data["password"],
-                _id=user_data["_id"],
-            )
+            return User._from_dict(user_data)
         return None
     
     def get_top_servers(self, limit=6):
@@ -157,5 +171,7 @@ class User(UserMixin):
 
 
 @login_manager.user_loader
-def load_user(user_id):
+def load_user(user_id: str) -> Optional[User]:
+    """Flask-Login user_loader. Usa caché in-process para evitar hit a MongoDB en cada request."""
+    return User.get_by_id(user_id)
     return User.get_by_id(user_id)
