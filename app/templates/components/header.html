@@ -1,19 +1,26 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/overlay.css') }}">
+
 <header>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/header.css') }}">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <script src="{{ url_for('static', filename='js/utils/header.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/utils/header.js') }}"></script>
     
-    <!-- Registro del Service Worker para caché del navegador -->
+    {# Inline user data so header.js doesn't need a /api/user fetch #}
+    <script>
+    window.__USER__ = {
+        isAdmin: {{ 'true' if current_user.is_authenticated and current_user.is_admin else 'false' }},
+        pfp: {{ (current_user.pfp | tojson) if current_user.is_authenticated and current_user.pfp else 'null' }}
+    };
+    </script>
+    
+    <!-- Registro del Service Worker -->
     <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/static/sw.js')
-                .then(function(registration) {
-                    console.log('Service Worker registrado con éxito:', registration.scope);
-                })
-                .catch(function(error) {
-                    console.log('Error al registrar Service Worker:', error);
-                });
+            navigator.serviceWorker.register('/sw.js');
         });
     }
     </script>

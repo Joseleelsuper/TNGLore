@@ -7,8 +7,7 @@
     <link rel="icon" href="{{ images['icons']['favicon'] }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/perfil.css') }}">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <script src="{{ url_for('static', filename='js/pages/perfil.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pages/perfil.js') }}" defer></script>
     <title>TNGLore - Perfil</title>
 </head>
 <body>
@@ -70,23 +69,7 @@
         <div class="top-servers">
             <h2>Top Servidores</h2>
             <div class="server-list">
-                {% if top_servers %}
-                    {% for server in top_servers %}
-                        <div class="server-card">
-                            <img 
-                                src="{{ server.icon if server.icon else url_for('static', filename='images/default_server_icon.png') }}" 
-                                alt="{{ server.name }}"
-                                class="server-icon"
-                            >
-                            <div class="server-info">
-                                <h3>{{ server.name }}</h3>
-                                <p>{{ server.coleccionables_count }} cartas</p>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="no-servers">No hay servidores disponibles</p>
-                {% endif %}
+                <p class="no-servers">Cargando servidores...</p>
             </div>
         </div>
     </main>

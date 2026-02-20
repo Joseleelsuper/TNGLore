@@ -1,10 +1,76 @@
 # app/utils/cache_manager.py
 import os
 import hashlib
-from typing import Any, Dict
+import logging
+from typing import Any, Callable, Dict, Optional
 from flask_caching import Cache
 from functools import wraps
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
+
+
+def safe_memoize(timeout: int = 300) -> Callable:
+    """Decorador que envuelve @cache.memoize con manejo seguro de errores.
+    
+    Si el backend de caché falla (ej: error de serialización),
+    el decorador captura la excepción y ejecuta la función original directamente.
+    Esto garantiza que los datos SIEMPRE se devuelven desde MongoDB aunque la caché falle.
+    
+    Uso:
+        @safe_memoize(timeout=600)
+        def get_data(): ...
+        
+    Para invalidar, usar: cache.delete_memoized(get_data._memoized_fn)
+    o bien la función safe_delete_memoized(get_data, ...).
+    """
+    from app import cache
+    
+    def decorator(func: Callable) -> Callable:
+        # Crear función interna con identidad del original ANTES de memoizar.
+        # Esto es crítico: @cache.memoize genera claves de caché usando
+        # __name__, __module__ y __qualname__ de la función que recibe.
+        # Si no se copian antes, todas las funciones compartirían la misma clave.
+        def inner_fn(*args, **kwargs):
+            return func(*args, **kwargs)
+        
+        inner_fn.__name__ = func.__name__
+        inner_fn.__module__ = func.__module__
+        inner_fn.__qualname__ = func.__qualname__
+        
+        # Ahora aplicar @cache.memoize — usará inner_fn.__qualname__ para el cache key
+        memoized_fn = cache.memoize(timeout=timeout)(inner_fn)
+        
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return memoized_fn(*args, **kwargs)
+            except Exception as e:
+                # Caché falló — ejecutar función directamente contra MongoDB
+                logger.warning(f"Cache error on {func.__name__}, falling through to DB: {e}")
+                return func(*args, **kwargs)
+        
+        # Guardar referencia a la función memoizada para delete_memoized
+        wrapper._memoized_fn = memoized_fn
+        return wrapper
+    return decorator
+
+
+def safe_delete_memoized(func: Callable, *args) -> None:
+    """Elimina entradas de caché de forma segura, ignorando errores del backend.
+    
+    Usa func._memoized_fn si la función fue decorada con @safe_memoize,
+    de lo contrario intenta directamente con la función proporcionada.
+    """
+    from app import cache
+    try:
+        target = getattr(func, '_memoized_fn', func)
+        if args:
+            cache.delete_memoized(target, *args)
+        else:
+            cache.delete_memoized(target)
+    except Exception as e:
+        logger.warning(f"Failed to delete memoized cache for {func.__name__}: {e}")
 
 class CacheManager:
     """Gestor de caché para optimizar el rendimiento de la aplicación"""
@@ -43,7 +109,7 @@ class CacheManager:
     def invalidate_pattern(self, pattern: str):
         """Invalida todas las claves que coincidan con un patrón"""
         # Nota: Flask-Caching no soporta patrones por defecto
-        # Esta es una implementación básica para RedisCache.
+        # Esta es una implementación básica para backends que soporten scan_iter.
         keys_to_delete = []
         cache_backend = getattr(self.cache, 'cache', None)
         if cache_backend and hasattr(cache_backend, 'scan_iter'):
@@ -73,83 +139,23 @@ class CacheManager:
         }
 
 
-class ImageCacheManager:
-    """Gestor específico para caché de imágenes"""
+def create_cache_config() -> Dict[str, Any]:
+    """Crea la configuración del caché según el entorno.
     
-    def __init__(self, cache_manager: CacheManager):
-        self.cache_manager = cache_manager
-        self.image_cache_timeout = 3600  # 1 hora
-        self.config_cache_timeout = 1800  # 30 minutos
+    Usa SimpleCache (en memoria) por defecto. En Vercel serverless
+    el caché se pierde en cold starts, pero safe_memoize garantiza
+    que siempre se sirven datos desde MongoDB.
+    """
+    cache_type = os.getenv('CACHE_TYPE', '')
     
-    @property
-    def cached_images(self):
-        """Decorador para cachear configuración de imágenes"""
-        return self.cache_manager.cached_result(
-            timeout=self.config_cache_timeout,
-            key_prefix="images"
-        )
-    
-    @property
-    def cached_collections(self):
-        """Decorador para cachear datos de colecciones"""
-        return self.cache_manager.cached_result(
-            timeout=self.image_cache_timeout,
-            key_prefix="collections"
-        )
-    
-    def get_optimized_image_url(self, base_url: str, size: str = "medium") -> str:
-        """Genera URLs optimizadas para imágenes según el tamaño"""
-        size_params = {
-            "thumbnail": "?w=150&h=150&fit=crop",
-            "small": "?w=300&h=300&fit=crop", 
-            "medium": "?w=600&h=600&fit=crop",
-            "large": "?w=1200&h=1200&fit=crop"
-        }
-        
-        param = size_params.get(size, size_params["medium"])
-        return f"{base_url}{param}"
-    
-    def preload_critical_images(self, image_urls: list) -> dict:
-        """Precarga imágenes críticas y devuelve metadatos"""
-        preload_data = {}
-        for url in image_urls:
-            cache_key = self.cache_manager.get_cache_key("image_meta", url)
-            cached_meta = self.cache_manager.cache.get(cache_key)
-            
-            if not cached_meta:
-                # Simular metadatos (en producción podrías obtener tamaño real, etc.)
-                meta = {
-                    'url': url,
-                    'loading': 'eager',
-                    'sizes': '(max-width: 768px) 100vw, 50vw',
-                    'preload': True
-                }
-                self.cache_manager.cache.set(cache_key, meta, timeout=self.image_cache_timeout)
-                preload_data[url] = meta
-            else:
-                preload_data[url] = cached_meta
-        
-        return preload_data
-
-
-def create_cache_config():
-    """Crea la configuración del caché según el entorno"""
-    cache_type = os.getenv('CACHE_TYPE', 'simple')
-    
-    if cache_type == 'redis':
-        return {
-            'CACHE_TYPE': 'RedisCache',
-            'CACHE_REDIS_URL': os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
-            'CACHE_DEFAULT_TIMEOUT': 300
-        }
-    elif cache_type == 'filesystem':
+    if cache_type == 'filesystem':
         return {
             'CACHE_TYPE': 'FileSystemCache',
             'CACHE_DIR': os.getenv('CACHE_DIR', '/tmp/flask-cache'),
             'CACHE_DEFAULT_TIMEOUT': 300
         }
     else:
-        # Caché en memoria para desarrollo
+        # Caché en memoria (SimpleCache)
         return {
             'CACHE_TYPE': 'SimpleCache',
             'CACHE_DEFAULT_TIMEOUT': 300

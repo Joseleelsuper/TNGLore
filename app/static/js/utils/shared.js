@@ -94,7 +94,6 @@ async function fetchData(url, method = 'GET', body = null, useCache = true) {
     
     // Si es GET y tenemos caché, usarlo
     if (method === 'GET' && useCache && cache.has(cacheKey)) {
-        console.log(`Cache hit for: ${url}`);
         return cache.get(cacheKey);
     }
 
@@ -129,7 +128,6 @@ async function fetchData(url, method = 'GET', body = null, useCache = true) {
             }
             
             cache.set(cacheKey, data, ttl);
-            console.log(`Cached response for: ${url}`);
         }
         
         return data;
@@ -138,7 +136,6 @@ async function fetchData(url, method = 'GET', body = null, useCache = true) {
         
         // En caso de error, intentar usar caché aunque esté expirado
         if (method === 'GET' && useCache && cache.data.has(cacheKey)) {
-            console.warn(`Using expired cache for: ${url}`);
             return cache.data.get(cacheKey);
         }
         
@@ -148,11 +145,8 @@ async function fetchData(url, method = 'GET', body = null, useCache = true) {
 
 // Función para precargar datos críticos
 async function preloadCriticalData() {
-    console.log('Precargando datos críticos...');
     try {
-        // Precargar colecciones
         await cargarColecciones();
-        console.log('Colecciones precargadas');
     } catch (error) {
         console.error('Error precargando datos:', error);
     }
@@ -308,42 +302,27 @@ async function abrirOverlayCarta(carta) {
         let nombreColeccion = 'No asignada';
         let coleccionId = extraerID(cartaCompleta.coleccion);
         
-        console.log('Debug - Carta completa:', cartaCompleta);
-        console.log('Debug - Colección extraída:', cartaCompleta.coleccion);
-        console.log('Debug - Colección ID extraído:', coleccionId);
-        
         // Verificar si el coleccionId es válido
         if (coleccionId && typeof coleccionId === 'object') {
-            console.error('Error: coleccionId es un objeto en lugar de string:', coleccionId);
             coleccionId = null;
         }
-        
-        // Debug adicional para verificar el tipo de coleccionId
-        console.log('Debug - Tipo de coleccionId:', typeof coleccionId, 'Valor:', coleccionId);
         
         if (coleccionId) {
             // Si ya tenemos el nombre de la colección en el objeto, usarlo
             if (cartaCompleta.coleccion && typeof cartaCompleta.coleccion === 'object' && cartaCompleta.coleccion.nombre) {
                 nombreColeccion = cartaCompleta.coleccion.nombre;
-                console.log('Debug - Nombre de colección encontrado en objeto:', nombreColeccion);
             } else if (coleccionId && typeof coleccionId === 'string') {
-                // Solo hacer la petición si no tenemos el nombre y tenemos un ID válido
                 try {
-                    console.log('Debug - Haciendo petición para colección:', coleccionId);
                     const response = await fetch(`/api/colecciones/${encodeURIComponent(coleccionId)}`);
                     if (response.ok) {
                         const coleccionInfo = await response.json();
                         nombreColeccion = coleccionInfo.nombre;
-                        console.log('Debug - Nombre de colección obtenido:', nombreColeccion);
-                    } else {
-                        console.warn('Debug - Respuesta no exitosa:', response.status, response.statusText);
                     }
                 } catch (error) {
-                    console.warn('Error obteniendo nombre de colección:', error);
+                    // silently ignore
                 }
             }
         } else {
-            console.log('Debug - No hay colección ID, carta sin colección asignada');
         }
 
         overlayContent.innerHTML = `
@@ -378,7 +357,6 @@ async function abrirOverlayCarta(carta) {
         // Cargar cartas relacionadas de forma asíncrona
         if (coleccionId && typeof coleccionId === 'string') {
             try {
-                console.log('Debug - Cargando cartas para colección:', coleccionId);
                 const response = await fetch(`/api/colecciones/${encodeURIComponent(coleccionId)}/cartas`);
                 if (response.ok) {
                     const cartasRelacionadas = await response.json();
@@ -608,12 +586,10 @@ function cerrarOverlay() {
 // Funciones de utilidad adicionales
 function limpiarCache() {
     cache.clear();
-    console.log('Caché limpiado');
 }
 
 function invalidarCacheColeccion(coleccionId) {
     cache.invalidate(coleccionId);
-    console.log(`Caché invalidado para colección: ${coleccionId}`);
 }
 
 function obtenerEstadisticasCache() {
@@ -628,13 +604,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Limpiar caché expirado cada 5 minutos
     setInterval(() => {
         cache.cleanup();
-        console.log('Limpieza automática de caché realizada');
     }, 5 * 60 * 1000);
 });
 
 // Invalidar caché cuando el usuario se desconecte/conecte
 window.addEventListener('online', function() {
-    console.log('Conexión restaurada - invalidando caché para refrescar datos');
     cache.invalidate('api');
 });
 

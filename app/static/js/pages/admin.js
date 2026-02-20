@@ -53,6 +53,11 @@ function setupOverlay() {
     };
 }
 
+function cerrarOverlay() {
+    const overlay = document.getElementById('overlay');
+    overlay.style.display = 'none';
+}
+
 async function abrirModal(tipo, id = null) {
     const modal = document.getElementById(`${tipo}-modal`);
     const titulo = document.getElementById(`${tipo}-modal-title`);
@@ -459,6 +464,67 @@ async function obtenerColeccionCompleta(id) {
     } catch (error) {
         console.error('Error al obtener la colección:', error);
         return null;
+    }
+}
+
+async function abrirOverlayCarta(carta) {
+    const overlay = document.getElementById('overlay');
+    const overlayContent = document.querySelector('.overlay-content');
+
+    // Si se recibe un string (ID), obtener datos completos
+    if (typeof carta === 'string') {
+        try {
+            carta = await fetchData(`/api/admin/cartas/${carta}`);
+        } catch (error) {
+            console.error('Error al obtener la carta:', error);
+            return;
+        }
+    }
+
+    if (!carta) return;
+
+    const coleccionNombre = carta.coleccion?.nombre || 'No asignada';
+
+    overlayContent.innerHTML = `
+        <span class="close-btn">&times;</span>
+        <div class="overlay-main">
+            <div class="overlay-image-container">
+                <a href="${carta.image || '/static/assets/images/placeholder-card.svg'}" target="_blank">
+                    <img src="${carta.image || '/static/assets/images/placeholder-card.svg'}" alt="${carta.nombre}" style="max-height: 400px; width: auto;">
+                </a>
+            </div>
+            <div class="overlay-details">
+                <h2>${carta.nombre}</h2>
+                <p><strong>Rareza:</strong> ${carta.rareza || 'Sin rareza'}</p>
+                <p><strong>Colección:</strong> ${coleccionNombre}</p>
+                ${carta.descripcion ? `<p><strong>Descripción:</strong> ${carta.descripcion}</p>` : ''}
+            </div>
+        </div>
+        ${carta.coleccion?._id || carta.coleccion?.id ? `
+        <div class="overlay-section">
+            <h3>Otras cartas de ${coleccionNombre}</h3>
+            <div class="overlay-cards" id="cartas-relacionadas-container"></div>
+        </div>` : ''}
+    `;
+
+    overlay.style.display = 'block';
+    document.querySelector('.close-btn').onclick = cerrarOverlay;
+
+    // Cargar cartas relacionadas de la misma colección
+    const coleccionId = carta.coleccion?._id || carta.coleccion?.id;
+    if (coleccionId) {
+        const cartasRelacionadas = await obtenerCartasColeccion(coleccionId);
+        const container = document.getElementById('cartas-relacionadas-container');
+        if (container) {
+            container.innerHTML = cartasRelacionadas
+                .filter(c => c._id !== carta._id)
+                .map(c => `
+                    <div class="overlay-card" onclick="abrirOverlayCarta(${JSON.stringify(c).replace(/"/g, '&quot;')})">
+                        <img src="${c.image || '/static/assets/images/placeholder-card.svg'}" alt="${c.nombre}">
+                        <p>${c.nombre}</p>
+                    </div>
+                `).join('');
+        }
     }
 }
 

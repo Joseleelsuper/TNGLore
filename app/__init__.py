@@ -12,7 +12,6 @@ bcrypt = Bcrypt()
 cache = Cache()
 mongo = None
 cache_manager = None
-async_db_manager = None
 
 
 def create_app():
@@ -31,7 +30,7 @@ def create_app():
     cache.init_app(app)
     
     # Inicializar gestores de caché
-    global cache_manager, async_db_manager
+    global cache_manager
     cache_manager = CacheManager(cache)
     
     # Conectar MongoDB con manejo de errores
@@ -46,10 +45,6 @@ def create_app():
         client.admin.command("ping")
         mongo = client.tnglore
         app.logger.info("Conexión exitosa a MongoDB")
-        
-        # Inicializar gestor de DB asíncrono después de conectar MongoDB
-        from app.utils.async_db import create_async_db_manager
-        async_db_manager = create_async_db_manager(mongo)
 
     except Exception as e:
         app.logger.error(f"Error conectando a MongoDB: {str(e)}")

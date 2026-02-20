@@ -10,7 +10,6 @@ else:
 class Config:
     MONGODB_URI = os.getenv('MONGODB_URI')
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev')
-    
     # Configuración de sesión
     PERMANENT_SESSION_LIFETIME = timedelta(hours=1)  # Duración máxima de inactividad
     SESSION_PERMANENT = False  # La sesión expira al cerrar el navegador

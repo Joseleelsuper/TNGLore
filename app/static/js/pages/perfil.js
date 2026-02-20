@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteAccountForm = document.getElementById('delete-account-form');
     const cancelDeleteBtn = document.getElementById('cancel-delete');
 
+    // Cargar servidores del bot via AJAX (no bloquea el render de la página)
+    loadBotServers();
+
     form.addEventListener('submit', function(event) {
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirm_password').value;
@@ -61,3 +64,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+/**
+ * Carga los servidores del bot via AJAX para no bloquear el render de /perfil.
+ */
+async function loadBotServers() {
+    const serverList = document.querySelector('.server-list');
+    if (!serverList) return;
+    
+    try {
+        const response = await fetch('/api/bot-servers');
+        if (!response.ok) throw new Error('Error fetching bot servers');
+        const servers = await response.json();
+        
+        if (servers.length === 0) {
+            serverList.innerHTML = '<p class="no-servers">No hay servidores disponibles</p>';
+            return;
+        }
+        
+        serverList.innerHTML = servers.map(server => `
+            <div class="server-card">
+                <img src="${server.icon || '/static/images/default_server_icon.png'}" 
+                     alt="${server.name}" class="server-icon">
+                <div class="server-info">
+                    <h3>${server.name}</h3>
+                    <p>${server.coleccionables_count} cartas</p>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        serverList.innerHTML = '<p class="no-servers">Error al cargar servidores</p>';
+    }
+}

@@ -5,11 +5,11 @@ import os
 from flask import Blueprint, current_app, render_template, request, jsonify
 from flask_login import login_required, current_user
 from bson.objectid import ObjectId
-from werkzeug.security import generate_password_hash
 
-from app import mongo, cache
+from app import mongo, cache, bcrypt
 from app.utils.adminRequired import admin_required
 from app.utils.images import get_images
+from app.utils.cache_manager import safe_memoize, safe_delete_memoized
 
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
@@ -19,7 +19,7 @@ GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "development")
 admin_bp = Blueprint("admin", __name__)
 
 
-@cache.memoize(timeout=600)  # 10 minutos de caché
+@safe_memoize(timeout=600)  # 10 minutos de caché
 def get_all_cards_cached():
     """Obtiene todas las cartas con caché para admin"""
     try:
@@ -33,7 +33,7 @@ def get_all_cards_cached():
         return []
 
 
-@cache.memoize(timeout=1200)  # 20 minutos de caché
+@safe_memoize(timeout=1200)  # 20 minutos de caché
 def get_all_collections_cached():
     """Obtiene todas las colecciones con caché para admin"""
     try:
@@ -50,8 +50,7 @@ def get_all_collections_cached():
         return []
 
 
-@admin_required
-@cache.memoize(timeout=300)  # 5 minutos de caché
+@safe_memoize(timeout=300)  # 5 minutos de caché
 def get_all_users_cached():
     """Obtiene todos los usuarios con caché para admin"""
     try:
@@ -69,18 +68,18 @@ def get_all_users_cached():
 
 def invalidate_cards_cache():
     """Invalida el caché de cartas cuando se modifican"""
-    cache.delete_memoized(get_all_cards_cached)
-    cache.delete_memoized(get_all_collections_cached)
+    safe_delete_memoized(get_all_cards_cached)
+    safe_delete_memoized(get_all_collections_cached)
 
 
 def invalidate_collections_cache():
     """Invalida el caché de colecciones cuando se modifican"""
-    cache.delete_memoized(get_all_collections_cached)
+    safe_delete_memoized(get_all_collections_cached)
 
 
 def invalidate_users_cache():
     """Invalida el caché de usuarios cuando se modifican"""
-    cache.delete_memoized(get_all_users_cached)
+    safe_delete_memoized(get_all_users_cached)
 
 
 @admin_bp.route("/admin")
@@ -95,7 +94,7 @@ def admin_panel():
 @login_required
 @admin_required
 def api_cartas():
-    """API para obtener cartas con caché"""
+    """API para obtener cartas con caché. Pre-carga colecciones para evitar N+1."""
     try:
         cartas = get_all_cards_cached()
         
@@ -103,39 +102,38 @@ def api_cartas():
         coleccion_id = request.args.get('coleccion')
         if coleccion_id:
             try:
-                # Convertir a ObjectId para la consulta
                 from bson import ObjectId
                 coleccion_oid = ObjectId(coleccion_id)
                 cartas = [carta for carta in cartas if carta.get('coleccion') == coleccion_oid]
             except Exception:
-                # Si no es un ObjectId válido, no filtrar
                 pass
         
-        # Procesar información de colecciones para cada carta
+        # Pre-cargar TODAS las colecciones en un dict para evitar N+1
+        all_collections = list(mongo.collections.find({}))
+        collections_map = {}
+        for col in all_collections:
+            collections_map[col['_id']] = {
+                'id': str(col['_id']),
+                'nombre': col['nombre'],
+                'descripcion': col.get('descripcion'),
+                'image': col.get('image')
+            }
+        
+        no_collection = {
+            'id': None,
+            'nombre': 'No asignada',
+            'descripcion': None,
+            'image': None
+        }
+        
+        # Mapear colecciones a cartas usando el dict pre-cargado
         for carta in cartas:
-            if 'coleccion' in carta and carta['coleccion']:
-                coleccion = mongo.collections.find_one({'_id': carta['coleccion']})
-                if coleccion:
-                    carta['coleccion'] = {
-                        'id': str(coleccion['_id']),
-                        'nombre': coleccion['nombre'],
-                        'descripcion': coleccion.get('descripcion'),
-                        'image': coleccion.get('image')
-                    }
-                else:
-                    carta['coleccion'] = {
-                        'id': None,
-                        'nombre': 'No asignada',
-                        'descripcion': None,
-                        'image': None
-                    }
+            col_id = carta.get('coleccion')
+            if col_id and col_id in collections_map:
+                carta['coleccion'] = collections_map[col_id]
             else:
-                carta['coleccion'] = {
-                    'id': None,
-                    'nombre': 'No asignada',
-                    'descripcion': None,
-                    'image': None
-                }
+                carta['coleccion'] = no_collection
+        
         return jsonify(cartas), 200
     except Exception as e:
         current_app.logger.error(f"Error al obtener cartas: {str(e)}", exc_info=True)
@@ -202,7 +200,7 @@ def obtener_carta(id):
             return jsonify(carta)
         return jsonify({"error": "Carta no encontrada"}), 404
     except Exception as e:
-        print(f"Error al obtener carta: {str(e)}")
+        current_app.logger.error(f"Error al obtener carta: {str(e)}")
         return jsonify({"error": "Error interno del servidor"}), 500
 
 
@@ -261,7 +259,7 @@ def crear_carta():
     except ValueError as ve:
         return jsonify({"error": f"ID de colección inválido: {str(ve)}"}), 400
     except Exception as e:
-        print(f"Error al crear carta: {str(e)}")
+        current_app.logger.error(f"Error al crear carta: {str(e)}")
         return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
 
 
@@ -341,7 +339,7 @@ def crear_coleccion():
             {"message": "Colección creada", "id": str(result.inserted_id)}
         ), 201
     except Exception as e:
-        print(f"Error al crear colección: {str(e)}")
+        current_app.logger.error(f"Error al crear colección: {str(e)}")
         return jsonify({"error": "Error interno del servidor"}), 500
 
 
@@ -465,7 +463,7 @@ def cambiar_contrasena_usuario(id):
         return jsonify({"error": "No se proporcionó una nueva contraseña"}), 400
     nueva_contrasena = request.json.get("password")
 
-    hashed_password = generate_password_hash(nueva_contrasena)
+    hashed_password = bcrypt.generate_password_hash(nueva_contrasena).decode('utf-8')
     mongo.users.update_one(
         {"_id": ObjectId(id)}, {"$set": {"password": hashed_password}}
     )
