@@ -1,10 +1,76 @@
 # app/utils/cache_manager.py
 import os
 import hashlib
-from typing import Any, Dict
+import logging
+from typing import Any, Callable, Dict, Optional
 from flask_caching import Cache
 from functools import wraps
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
+
+
+def safe_memoize(timeout: int = 300) -> Callable:
+    """Decorador que envuelve @cache.memoize con manejo seguro de errores.
+    
+    Si el backend de caché falla (ej: error de serialización),
+    el decorador captura la excepción y ejecuta la función original directamente.
+    Esto garantiza que los datos SIEMPRE se devuelven desde MongoDB aunque la caché falle.
+    
+    Uso:
+        @safe_memoize(timeout=600)
+        def get_data(): ...
+        
+    Para invalidar, usar: cache.delete_memoized(get_data._memoized_fn)
+    o bien la función safe_delete_memoized(get_data, ...).
+    """
+    from app import cache
+    
+    def decorator(func: Callable) -> Callable:
+        # Crear función interna con identidad del original ANTES de memoizar.
+        # Esto es crítico: @cache.memoize genera claves de caché usando
+        # __name__, __module__ y __qualname__ de la función que recibe.
+        # Si no se copian antes, todas las funciones compartirían la misma clave.
+        def inner_fn(*args, **kwargs):
+            return func(*args, **kwargs)
+        
+        inner_fn.__name__ = func.__name__
+        inner_fn.__module__ = func.__module__
+        inner_fn.__qualname__ = func.__qualname__
+        
+        # Ahora aplicar @cache.memoize — usará inner_fn.__qualname__ para el cache key
+        memoized_fn = cache.memoize(timeout=timeout)(inner_fn)
+        
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return memoized_fn(*args, **kwargs)
+            except Exception as e:
+                # Caché falló — ejecutar función directamente contra MongoDB
+                logger.warning(f"Cache error on {func.__name__}, falling through to DB: {e}")
+                return func(*args, **kwargs)
+        
+        # Guardar referencia a la función memoizada para delete_memoized
+        wrapper._memoized_fn = memoized_fn
+        return wrapper
+    return decorator
+
+
+def safe_delete_memoized(func: Callable, *args) -> None:
+    """Elimina entradas de caché de forma segura, ignorando errores del backend.
+    
+    Usa func._memoized_fn si la función fue decorada con @safe_memoize,
+    de lo contrario intenta directamente con la función proporcionada.
+    """
+    from app import cache
+    try:
+        target = getattr(func, '_memoized_fn', func)
+        if args:
+            cache.delete_memoized(target, *args)
+        else:
+            cache.delete_memoized(target)
+    except Exception as e:
+        logger.warning(f"Failed to delete memoized cache for {func.__name__}: {e}")
 
 class CacheManager:
     """Gestor de caché para optimizar el rendimiento de la aplicación"""
@@ -43,7 +109,7 @@ class CacheManager:
     def invalidate_pattern(self, pattern: str):
         """Invalida todas las claves que coincidan con un patrón"""
         # Nota: Flask-Caching no soporta patrones por defecto
-        # Esta es una implementación básica para RedisCache.
+        # Esta es una implementación básica para backends que soporten scan_iter.
         keys_to_delete = []
         cache_backend = getattr(self.cache, 'cache', None)
         if cache_backend and hasattr(cache_backend, 'scan_iter'):
@@ -76,27 +142,20 @@ class CacheManager:
 def create_cache_config() -> Dict[str, Any]:
     """Crea la configuración del caché según el entorno.
     
-    Auto-detecta Redis si REDIS_URL está definida. Esto es crítico
-    para Vercel serverless, donde SimpleCache se pierde en cold starts.
+    Usa SimpleCache (en memoria) por defecto. En Vercel serverless
+    el caché se pierde en cold starts, pero safe_memoize garantiza
+    que siempre se sirven datos desde MongoDB.
     """
-    redis_url = os.getenv('REDIS_URL')
     cache_type = os.getenv('CACHE_TYPE', '')
     
-    # Auto-detect: si hay REDIS_URL, usar Redis aunque no se pida explícitamente
-    if redis_url or cache_type == 'redis':
-        return {
-            'CACHE_TYPE': 'RedisCache',
-            'CACHE_REDIS_URL': redis_url or 'redis://localhost:6379/0',
-            'CACHE_DEFAULT_TIMEOUT': 300
-        }
-    elif cache_type == 'filesystem':
+    if cache_type == 'filesystem':
         return {
             'CACHE_TYPE': 'FileSystemCache',
             'CACHE_DIR': os.getenv('CACHE_DIR', '/tmp/flask-cache'),
             'CACHE_DEFAULT_TIMEOUT': 300
         }
     else:
-        # Caché en memoria para desarrollo local
+        # Caché en memoria (SimpleCache)
         return {
             'CACHE_TYPE': 'SimpleCache',
             'CACHE_DEFAULT_TIMEOUT': 300

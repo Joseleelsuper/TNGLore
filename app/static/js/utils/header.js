@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const navToggle = document.querySelector('.nav-toggle');
     const navMenu = document.querySelector('nav ul');
     const overlay = document.createElement('div');
-    overlay.className = 'overlay';
+    overlay.className = 'nav-overlay';
 
     function closeMenu() {
         navMenu.classList.remove('active');

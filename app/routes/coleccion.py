@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Optional
 import logging
 
 from app.utils.images import get_images
+from app.utils.cache_manager import safe_memoize
 from app import mongo, cache
 
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 collections_bp = Blueprint("collections", __name__)
 
 
-@cache.memoize(timeout=1800)  # 30 minutos de caché
+@safe_memoize(timeout=1800)  # 30 minutos de caché
 def get_all_collections() -> List[Dict[str, Any]]:
     """Obtiene todas las colecciones con conteo de cartas via agregación (sin N+1)."""
     try:
@@ -36,7 +37,7 @@ def get_all_collections() -> List[Dict[str, Any]]:
         return []
 
 
-@cache.memoize(timeout=900)  # 15 minutos de caché
+@safe_memoize(timeout=900)  # 15 minutos de caché
 def get_user_collectibles_data(user_email: str) -> Dict[str, Any]:
     """Obtiene datos de coleccionables del usuario con batch query (sin N+1 por guild)."""
     try:
@@ -91,7 +92,7 @@ def get_user_collectibles_data(user_email: str) -> Dict[str, Any]:
         return {"guilds": []}
 
 
-@cache.memoize(timeout=1200)  # 20 minutos de caché
+@safe_memoize(timeout=1200)  # 20 minutos de caché
 def get_collection_cards(collection_id):
     """Obtiene todas las cartas de una colección específica con caché"""
     try:
@@ -113,7 +114,7 @@ def get_collection_cards(collection_id):
         return []
 
 
-@cache.memoize(timeout=600)  # 10 minutos de caché  
+@safe_memoize(timeout=600)  # 10 minutos de caché  
 def get_card_details(card_id):
     """Obtiene detalles de una carta específica con caché"""
     try:

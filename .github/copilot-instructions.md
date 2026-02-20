@@ -8,7 +8,7 @@ Web app for opening chests and collecting cards, integrated with a Discord bot. 
 - **MongoDB** (`tnglore` database): collections `users`, `chests`, `collectables`. All DB access via the global `mongo` instance from `app/__init__.py`.
 - **Global singletons** defined in `app/__init__.py`: `mongo`, `cache` (Flask-Caching), `cache_manager` (`CacheManager`).
 - **Config** loaded from `.env` (or `.env.local`) via `config/settings.py`.
-- **Deployment**: Vercel serverless. Redis (Upstash) for shared cache across cold starts.
+- **Deployment**: Vercel serverless. SimpleCache (in-memory) with `safe_memoize` fallback.
 
 ## DB Access Pattern
 

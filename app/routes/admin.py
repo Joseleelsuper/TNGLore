@@ -9,6 +9,7 @@ from bson.objectid import ObjectId
 from app import mongo, cache, bcrypt
 from app.utils.adminRequired import admin_required
 from app.utils.images import get_images
+from app.utils.cache_manager import safe_memoize, safe_delete_memoized
 
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
@@ -18,7 +19,7 @@ GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "development")
 admin_bp = Blueprint("admin", __name__)
 
 
-@cache.memoize(timeout=600)  # 10 minutos de caché
+@safe_memoize(timeout=600)  # 10 minutos de caché
 def get_all_cards_cached():
     """Obtiene todas las cartas con caché para admin"""
     try:
@@ -32,7 +33,7 @@ def get_all_cards_cached():
         return []
 
 
-@cache.memoize(timeout=1200)  # 20 minutos de caché
+@safe_memoize(timeout=1200)  # 20 minutos de caché
 def get_all_collections_cached():
     """Obtiene todas las colecciones con caché para admin"""
     try:
@@ -49,8 +50,7 @@ def get_all_collections_cached():
         return []
 
 
-@admin_required
-@cache.memoize(timeout=300)  # 5 minutos de caché
+@safe_memoize(timeout=300)  # 5 minutos de caché
 def get_all_users_cached():
     """Obtiene todos los usuarios con caché para admin"""
     try:
@@ -68,18 +68,18 @@ def get_all_users_cached():
 
 def invalidate_cards_cache():
     """Invalida el caché de cartas cuando se modifican"""
-    cache.delete_memoized(get_all_cards_cached)
-    cache.delete_memoized(get_all_collections_cached)
+    safe_delete_memoized(get_all_cards_cached)
+    safe_delete_memoized(get_all_collections_cached)
 
 
 def invalidate_collections_cache():
     """Invalida el caché de colecciones cuando se modifican"""
-    cache.delete_memoized(get_all_collections_cached)
+    safe_delete_memoized(get_all_collections_cached)
 
 
 def invalidate_users_cache():
     """Invalida el caché de usuarios cuando se modifican"""
-    cache.delete_memoized(get_all_users_cached)
+    safe_delete_memoized(get_all_users_cached)
 
 
 @admin_bp.route("/admin")

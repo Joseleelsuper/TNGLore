@@ -7,6 +7,7 @@ from collections import Counter
 import logging
 
 from app.utils.images import get_images
+from app.utils.cache_manager import safe_memoize, safe_delete_memoized
 from app import mongo, cache
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ def serialize_doc(doc):
         return doc
 
 
-@cache.memoize(timeout=600)  # Cache por 10 minutos
+@safe_memoize(timeout=600)  # Cache por 10 minutos
 def get_user_chests_data(email: str) -> dict:
     """Obtiene los datos de cofres del usuario con caché"""
     user_data = mongo.users.find_one({"email": email})
@@ -107,13 +108,13 @@ def get_user_chests_data(email: str) -> dict:
     return {"user_chests": user_chests, "guild_mapping": guild_mapping}
 
 
-@cache.memoize(timeout=300)  # Cache por 5 minutos (datos más dinámicos)
+@safe_memoize(timeout=300)  # Cache por 5 minutos (datos más dinámicos)
 def get_chest_config() -> dict:
     """Obtiene la configuración de cofres con caché"""
     return CHEST_CONFIG.copy()
 
 
-@cache.memoize(timeout=1800)  # Cache por 30 minutos
+@safe_memoize(timeout=1800)  # Cache por 30 minutos
 def get_chest_rarity_colors() -> dict:
     """Obtiene los colores de rareza con caché"""
     return rarity_colors.copy()
@@ -152,7 +153,7 @@ def open_chests():
         return jsonify({"error": "Tipo de cofre inválido"}), 400
 
     # Invalidar caché del usuario después de abrir cofre
-    cache.delete_memoized(get_user_chests_data, current_user.email)
+    safe_delete_memoized(get_user_chests_data, current_user.email)
 
     try:
         result = _open_chest_sync(current_user.email, chest_type, server)
