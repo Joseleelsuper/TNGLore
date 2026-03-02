@@ -53,21 +53,21 @@ def cofres_log() -> tuple:
             for chest in chests_docs:
                 chests_map[str(chest["_id"])] = chest.get("rarity", "Desconocida")
         
-        # Batch query: verificar qué usernames existen
-        existing_users = set()
+        # Batch query: verificar qué usernames existen + obtener pfp
+        users_info: Dict[str, str] = {}  # username -> pfp
         if usernames:
             users_docs = mongo.users.find(
                 {"username": {"$in": list(usernames)}},
-                {"username": 1}
+                {"username": 1, "pfp": 1}
             )
             for user in users_docs:
-                existing_users.add(user["username"])
+                users_info[user["username"]] = user.get("pfp", "")
         
         # Construir respuesta filtrada
         filtered_logs: List[Dict[str, Any]] = []
         for log in logs:
             username = log.get("username")
-            if username not in existing_users:
+            if username not in users_info:
                 continue
             
             log["_id"] = str(log["_id"])
@@ -76,6 +76,7 @@ def cofres_log() -> tuple:
             
             chest_rarity = chests_map.get(log.get("chest_id"), "Desconocida")
             log["chest"] = {"rareza": chest_rarity}
+            log["pfp"] = users_info.get(username, "")
             filtered_logs.append(log)
         
         return jsonify(filtered_logs)

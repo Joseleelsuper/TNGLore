@@ -1,3 +1,5 @@
+import { abrirOverlayCarta } from '../utils/shared.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('perfil-form');
     const logoutBtn = document.getElementById('logout-btn');
@@ -8,6 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Cargar servidores del bot via AJAX (no bloquea el render de la página)
     loadBotServers();
+
+    // Cargar historial de cofres
+    loadOpeningHistory();
 
     form.addEventListener('submit', function(event) {
         const password = document.getElementById('password').value;
@@ -94,5 +99,101 @@ async function loadBotServers() {
         `).join('');
     } catch (error) {
         serverList.innerHTML = '<p class="no-servers">Error al cargar servidores</p>';
+    }
+}
+
+
+// ─── Historial de cofres abiertos ─────────────────────────
+
+let _historyPage = 1;
+const HISTORY_LIMIT = 10;
+
+async function loadOpeningHistory(append = false) {
+    const list = document.getElementById('history-list');
+    const btn = document.getElementById('history-load-more');
+    if (!list) return;
+
+    if (!append) {
+        list.innerHTML = '<p class="history-loading">Cargando historial...</p>';
+        _historyPage = 1;
+    }
+
+    try {
+        const res = await fetch(`/api/user/opening-history?page=${_historyPage}&limit=${HISTORY_LIMIT}`);
+        if (!res.ok) throw new Error('Error');
+        const data = await res.json();
+
+        if (!append) list.innerHTML = '';
+
+        if (data.entries.length === 0 && _historyPage === 1) {
+            list.innerHTML = '<p class="history-empty">Aún no has abierto ningún cofre.</p>';
+            btn.style.display = 'none';
+            return;
+        }
+
+        const rarityColors = {
+            comun: '#9e9e9e', rara: '#66bb6a', epica: '#ab47bc', legendaria: '#ffd54f'
+        };
+
+        data.entries.forEach(entry => {
+            const card = document.createElement('div');
+            card.className = 'history-entry';
+            const date = new Date(entry.opened_at).toLocaleDateString('es-ES', {
+                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+            const chestType = entry.chest_type || '?';
+            const source = entry.chest_source || '';
+
+            const cardsContainer = document.createElement('div');
+            cardsContainer.className = 'history-cards';
+
+            (entry.cards_received || []).forEach(c => {
+                const color = rarityColors[c.rareza] || '#ccc';
+                const chip = document.createElement('span');
+                chip.className = 'history-card-chip';
+                chip.style.borderColor = color;
+                chip.style.color = color;
+                chip.textContent = c.nombre;
+                chip.addEventListener('click', () => {
+                    abrirOverlayCarta({
+                        _id: c.card_id || '',
+                        nombre: c.nombre,
+                        rareza: c.rareza,
+                        coleccion: c.coleccion || '',
+                        image: c.image || '',
+                    });
+                });
+                cardsContainer.appendChild(chip);
+            });
+
+            if (cardsContainer.children.length === 0) {
+                cardsContainer.innerHTML = '<em>Sin cartas</em>';
+            }
+
+            const meta = document.createElement('div');
+            meta.className = 'history-meta';
+            meta.innerHTML = `
+                <span class="history-type" style="color:${rarityColors[chestType] || '#ccc'}">
+                    Cofre ${chestType}
+                </span>
+                ${source ? `<span class="history-source">${source}</span>` : ''}
+                <span class="history-date">${date}</span>
+            `;
+            card.appendChild(meta);
+            card.appendChild(cardsContainer);
+            list.appendChild(card);
+        });
+
+        btn.style.display = data.has_more ? '' : 'none';
+        if (data.has_more) {
+            btn.onclick = () => {
+                _historyPage++;
+                loadOpeningHistory(true);
+            };
+        }
+    } catch (e) {
+        console.error(e);
+        if (!append) list.innerHTML = '<p class="history-empty">Error al cargar historial.</p>';
+        btn.style.display = 'none';
     }
 }

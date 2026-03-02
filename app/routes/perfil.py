@@ -123,3 +123,58 @@ def delete_account():
     logout_user()
 
     return jsonify({'message': 'Cuenta eliminada correctamente.'}), 200
+
+
+@perfil_bp.route('/api/user/opening-history')
+@login_required
+def api_opening_history():
+    """Historial de cofres abiertos por el usuario, paginado."""
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+        limit = min(50, max(1, int(request.args.get('limit', 10))))
+        skip = (page - 1) * limit
+
+        total = mongo.opening_history.count_documents({"user_email": current_user.email})
+
+        entries = list(
+            mongo.opening_history.find(
+                {"user_email": current_user.email},
+                {"_id": 0, "user_email": 0},
+            )
+            .sort("opened_at", -1)
+            .skip(skip)
+            .limit(limit)
+        )
+
+        # Serializar datetimes
+        for entry in entries:
+            if entry.get("opened_at"):
+                entry["opened_at"] = entry["opened_at"].isoformat()
+
+        # Resolver chest_source (guild ID) a nombre de servidor
+        guild_name_map = {}
+        if hasattr(current_user, 'guilds') and current_user.guilds:
+            guild_name_map = {
+                g.get("id", ""): g.get("name", "Servidor")
+                for g in current_user.guilds
+                if g.get("id")
+            }
+
+        for entry in entries:
+            source = entry.get("chest_source", "")
+            if source == "daily_reward":
+                entry["chest_source"] = "Recompensa diaria"
+            elif source in guild_name_map:
+                entry["chest_source"] = guild_name_map[source]
+            # else: keep raw ID as fallback
+
+        return jsonify({
+            "entries": entries,
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "has_more": skip + limit < total,
+        })
+    except Exception as e:
+        logger.error(f"Error fetching opening history: {e}", exc_info=True)
+        return jsonify({"error": "Error interno"}), 500

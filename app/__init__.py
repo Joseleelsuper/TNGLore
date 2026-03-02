@@ -58,6 +58,7 @@ def create_app():
     from app.routes.coleccion import collections_bp
     from app.routes.perfil import perfil_bp
     from app.routes.faq import faq_bp
+    from app.routes.events import events_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -66,6 +67,17 @@ def create_app():
     app.register_blueprint(collections_bp)
     app.register_blueprint(perfil_bp)
     app.register_blueprint(faq_bp)
+    app.register_blueprint(events_bp)
+
+    # Ensure indexes for event_progress
+    try:
+        mongo.event_progress.create_index(
+            [("user_email", 1), ("event_id", 1)],
+            unique=True,
+            background=True,
+        )
+    except Exception as idx_err:
+        app.logger.warning(f"Could not create event_progress index: {idx_err}")
     
     # Registrar template helpers para optimización de imágenes
     from app.utils.template_helpers import register_template_helpers

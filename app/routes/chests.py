@@ -2,45 +2,30 @@
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
 import random
+from datetime import datetime, timezone
 from bson import ObjectId
 from collections import Counter
 import logging
+from typing import Dict, Any, List, Optional
 
 from app.utils.images import get_images
 from app.utils.cache_manager import safe_memoize, safe_delete_memoized
+from app.utils.game_config import (
+    get_chest_config as _yaml_chest_config,
+    get_card_rarities as _yaml_card_rarities,
+    get_rarity_colors as _yaml_rarity_colors,
+    get_chest_images as _yaml_chest_images,
+)
 from app import mongo, cache
 
 logger = logging.getLogger(__name__)
 
 chest_bp = Blueprint("chests", __name__)
 
-# Configuración de cofres: cantidad de cartas y probabilidades (en porcentaje)
-CHEST_CONFIG = {
-    "comun": {"cards": 2, "probabilities": [70, 16, 12, 2], "name": "Común"},
-    "rara": {"cards": 3, "probabilities": [35, 45, 15, 5], "name": "Raro"},
-    "epica": {"cards": 4, "probabilities": [20, 30, 35, 15], "name": "Épico"},
-    "legendaria": {"cards": 5, "probabilities": [10, 25, 35, 30], "name": "Legendario"},
-}
 
-CARD_RARITIES = ["comun", "rara", "epica", "legendaria"]
-
-
-def get_image_url(rarity):
-    mapping = {
-        "comun": "/assets/images/cofre-comun.webp",
-        "rara": "/assets/images/cofre-rara.webp",
-        "epica": "/assets/images/cofre-epica.webp",
-        "legendaria": "/assets/images/cofre-legendaria.webp",
-    }
-    return mapping.get(rarity, "")
-
-
-rarity_colors = {
-    "comun": "#9e9e9e",
-    "rara": "#4CAF50",
-    "epica": "#9C27B0",
-    "legendaria": "#FFD700",
-}
+def _get_image_url(rarity: str) -> str:
+    """Obtiene la URL de imagen de cofre desde la config YAML."""
+    return _yaml_chest_images().get(rarity, "")
 
 
 def serialize_doc(doc):
@@ -55,25 +40,27 @@ def serialize_doc(doc):
 
 
 @safe_memoize(timeout=600)  # Cache por 10 minutos
-def get_user_chests_data(email: str) -> dict:
+def get_user_chests_data(email: str) -> Dict[str, Any]:
     """Obtiene los datos de cofres del usuario con caché"""
     user_data = mongo.users.find_one({"email": email})
     if not user_data or "chests" not in user_data:
         return {"user_chests": [], "guild_mapping": {}}
     
+    rarity_colors = _yaml_rarity_colors()
+
     # Obtener cofres con conteo
-    chest_id_list = user_data.get("chests", [])
-    chest_counts = Counter(chest_id_list)
+    chest_id_list: List[str] = user_data.get("chests", [])
+    chest_counts: Dict[str, int] = dict(Counter(chest_id_list))
     unique_ids = [ObjectId(_id) for _id in chest_counts.keys()]
     chests_docs = list(mongo.chests.find({"_id": {"$in": unique_ids}}))
     
     # Procesar datos de cofres
-    grouped = {}
+    grouped: Dict[tuple, Dict[str, Any]] = {}
     for chest in chests_docs:
         rarity = chest.get("rarity")
         servidor = chest.get("servidor")
         key = (rarity, servidor)
-        count = chest_counts.get(str(chest["_id"]))
+        count = chest_counts.get(str(chest["_id"]), 0)
         
         if key in grouped:
             grouped[key]["count"] += count
@@ -82,13 +69,13 @@ def get_user_chests_data(email: str) -> dict:
                 "chest_type": rarity,
                 "servidor": servidor,
                 "count": count,
-                "image": get_image_url(rarity),
+                "image": _get_image_url(rarity),
             }
     
-    user_chests = list(grouped.values())
+    user_chests: List[Dict[str, Any]] = list(grouped.values())
     
     # Crear mapeo de servidores
-    guild_mapping = {
+    guild_mapping: Dict[str, Dict[str, str]] = {
         guild["id"]: {
             "name": guild.get("name", "Servidor desconocido"),
             "icon": guild.get("icon", ""),
@@ -108,16 +95,14 @@ def get_user_chests_data(email: str) -> dict:
     return {"user_chests": user_chests, "guild_mapping": guild_mapping}
 
 
-@safe_memoize(timeout=300)  # Cache por 5 minutos (datos más dinámicos)
-def get_chest_config() -> dict:
-    """Obtiene la configuración de cofres con caché"""
-    return CHEST_CONFIG.copy()
+def get_chest_config() -> Dict[str, Dict[str, Any]]:
+    """Obtiene la configuración de cofres desde YAML (hot-reloadable)."""
+    return _yaml_chest_config()
 
 
-@safe_memoize(timeout=1800)  # Cache por 30 minutos
-def get_chest_rarity_colors() -> dict:
-    """Obtiene los colores de rareza con caché"""
-    return rarity_colors.copy()
+def get_chest_rarity_colors() -> Dict[str, str]:
+    """Obtiene los colores de rareza desde YAML (hot-reloadable)."""
+    return _yaml_rarity_colors()
 
 
 @chest_bp.route("/cofres")
@@ -149,7 +134,7 @@ def open_chests():
 
     if not server:
         return jsonify({"error": "Servidor no especificado"}), 400
-    if chest_type not in CHEST_CONFIG:
+    if chest_type not in _yaml_chest_config():
         return jsonify({"error": "Tipo de cofre inválido"}), 400
 
     # Invalidar caché del usuario después de abrir cofre
@@ -187,14 +172,16 @@ def _open_chest_sync(email: str, chest_type: str, server: str) -> dict:
     if not matching_id:
         return {"error": "No tienes el cofre indicado"}
 
-    config = CHEST_CONFIG[chest_type]
-    cards: list = []
-    received_card_ids: list = []
+    chest_cfg = _yaml_chest_config()
+    card_rarities = _yaml_card_rarities()
+    config = chest_cfg[chest_type]
+    cards: List[Dict[str, Any]] = []
+    received_card_ids: List[str] = []
 
     for _ in range(config["cards"]):
         r = random.uniform(0, 100)
         cumulative = 0
-        for rarity, prob in zip(CARD_RARITIES, config["probabilities"]):
+        for rarity, prob in zip(card_rarities, config["probabilities"]):
             cumulative += prob
             if r <= cumulative:
                 pipeline = [{"$match": {"rareza": rarity}}, {"$sample": {"size": 1}}]
@@ -222,6 +209,28 @@ def _open_chest_sync(email: str, chest_type: str, server: str) -> dict:
         {"email": email, "guilds.id": server},
         {"$push": {"guilds.$.coleccionables": {"$each": received_card_ids}}},
     )
+
+    # Guardar historial de apertura
+    try:
+        history_cards: List[Dict[str, Any]] = []
+        for card in cards:
+            history_cards.append({
+                "card_id": card.get("_id", ""),
+                "nombre": card.get("nombre", ""),
+                "rareza": card.get("rareza", ""),
+                "coleccion": str(card.get("coleccion", "")),
+                "image": card.get("image", ""),
+            })
+        mongo.opening_history.insert_one({
+            "user_email": email,
+            "chest_type": chest_type,
+            "chest_source": server,
+            "cards_received": history_cards,
+            "opened_at": datetime.now(timezone.utc),
+        })
+    except Exception as history_err:
+        logger.warning(f"Failed to log chest opening history: {history_err}")
+
     return {"results": {"chest_type": chest_type, "cards": cards}}
 
 

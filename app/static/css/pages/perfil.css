@@ -401,3 +401,86 @@
         font-size: 1.6rem;
     }
 }
+
+/* ─── Opening History ──────────────────────────────────────── */
+.opening-history {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 1.5rem;
+    color: #333;
+}
+
+.opening-history h2 {
+    margin-bottom: 1rem;
+    font-size: 1.3em;
+    color: #333;
+}
+
+.history-loading, .history-empty {
+    text-align: center;
+    color: #888;
+    padding: 1rem 0;
+}
+
+.history-entry {
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px;
+}
+
+.history-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.history-type {
+    font-weight: 700;
+    text-transform: capitalize;
+    color: #333;
+}
+
+.history-source {
+    font-size: 0.8em;
+    color: #4d7cff;
+    background: #e8eeff;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.history-date {
+    font-size: 0.8em;
+    color: #999;
+    margin-left: auto;
+}
+
+.history-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.history-card-chip {
+    font-size: 0.8em;
+    padding: 2px 8px;
+    border: 1px solid;
+    border-radius: 12px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+}
+
+.history-card-chip:hover {
+    background: rgba(0,0,0,0.05);
+    transform: scale(1.05);
+}
+
+#history-load-more {
+    margin-top: 1rem;
+    width: 100%;
+}

@@ -7,7 +7,8 @@
     <link rel="icon" href="{{ images['icons']['favicon'] }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/perfil.css') }}">
-    <script src="{{ url_for('static', filename='js/pages/perfil.js') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/overlay.css') }}">
+    <script type="module" src="{{ url_for('static', filename='js/pages/perfil.js') }}"></script>
     <title>TNGLore - Perfil</title>
 </head>
 <body>
@@ -72,6 +73,15 @@
                 <p class="no-servers">Cargando servidores...</p>
             </div>
         </div>
+
+        <!-- Historial de cofres abiertos -->
+        <div class="opening-history">
+            <h2>Historial de Cofres</h2>
+            <div id="history-list">
+                <p class="history-loading">Cargando historial...</p>
+            </div>
+            <button id="history-load-more" class="btn btn-secondary" style="display:none;">Cargar más</button>
+        </div>
     </main>
 
     <div id="delete-account-modal" class="modal">
@@ -93,6 +103,13 @@
                 <button type="submit" class="btn btn-danger">Borrar Cuenta</button>
                 <button type="button" id="cancel-delete" class="btn btn-secondary">Cancelar</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Overlay para detalle de carta -->
+    <div id="overlay" class="overlay">
+        <div class="overlay-content">
+            <!-- Contenido del overlay se carga dinámicamente -->
         </div>
     </div>
 </body>
