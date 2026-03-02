@@ -2,17 +2,29 @@ import requests
 import base64
 import os
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from typing import Any, Dict, List
 
 from flask import Blueprint, current_app, render_template, request, jsonify
 from flask_login import login_required, current_user
 from bson.objectid import ObjectId
 
-from app import mongo, cache, bcrypt
+from app import mongo, bcrypt
 from app.utils.adminRequired import admin_required
 from app.utils.images import get_images
 from app.utils.cache_manager import safe_memoize, safe_delete_memoized
 from app.models.user import invalidate_user_cache
+
+
+MADRID_TZ = ZoneInfo("Europe/Madrid")
+
+
+def _parse_madrid_to_utc(dt_str: str) -> datetime:
+    """Parsea una cadena datetime sin timezone como hora de Madrid y la convierte a UTC."""
+    naive_dt = datetime.fromisoformat(dt_str)
+    if naive_dt.tzinfo is not None:
+        return naive_dt.astimezone(timezone.utc)
+    return naive_dt.replace(tzinfo=MADRID_TZ).astimezone(timezone.utc)
 
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
@@ -914,8 +926,8 @@ def crear_evento() -> tuple:
                 if not rw.get("card_id") and rw.get("rarity") not in ("comun", "rara", "epica", "legendaria"):
                     return jsonify({"error": f"Carta o rareza requerida en día {i+1}"}), 400
 
-        start_date = datetime.fromisoformat(data["start_date"]) if data.get("start_date") else datetime.now(timezone.utc)
-        end_date = datetime.fromisoformat(data["end_date"]) if data.get("end_date") else None
+        start_date = _parse_madrid_to_utc(data["start_date"]) if data.get("start_date") else datetime.now(timezone.utc)
+        end_date = _parse_madrid_to_utc(data["end_date"]) if data.get("end_date") else None
 
         event_doc: Dict[str, Any] = {
             "name": name,
@@ -1004,10 +1016,10 @@ def actualizar_evento(id: str) -> tuple:
             update["active"] = bool(data["active"])
 
         if "start_date" in data:
-            update["start_date"] = datetime.fromisoformat(data["start_date"]) if data["start_date"] else None
+            update["start_date"] = _parse_madrid_to_utc(data["start_date"]) if data["start_date"] else None
 
         if "end_date" in data:
-            update["end_date"] = datetime.fromisoformat(data["end_date"]) if data["end_date"] else None
+            update["end_date"] = _parse_madrid_to_utc(data["end_date"]) if data["end_date"] else None
 
         result = mongo.events.update_one({"_id": ObjectId(id)}, {"$set": update})
         if result.matched_count == 0:

@@ -4,11 +4,10 @@ from flask_login import login_required, current_user, logout_user
 from app import bcrypt, mongo
 from app.utils.images import get_images
 from app.utils.validation_utils import validate_user_input
+from app.utils.bot_servers import get_shared_bot_servers
 from app.models.user import invalidate_user_cache
 
 import logging
-import os
-import requests
 
 logger = logging.getLogger(__name__)
 
@@ -76,30 +75,17 @@ def perfil():
 @login_required
 def api_bot_servers():
     """Endpoint AJAX para obtener servidores del bot sin bloquear el render de /perfil."""
-    api_secret = os.getenv("API_SECRET")
-    servers_api_url = "https://172.93.110.38:4009/getBotServers"
-    headers = {"X-API-KEY": api_secret}
-    try:
-        response = requests.get(servers_api_url, headers=headers, verify=False, timeout=3)
-        response.raise_for_status()
-        servers_data = response.json()
-    except Exception as e:
-        logger.warning(f"Error al conectar con la API del bot: {e}")
-        return jsonify([])
-    
-    # Combinar con guilds del usuario
+    shared = get_shared_bot_servers(current_user.guilds or [])
+
+    # Enriquecer con conteo de coleccionables del usuario
+    user_guild_map = {
+        g.get("id"): g for g in (current_user.guilds or []) if g.get("id")
+    }
     top_servers = []
-    for server in servers_data:
-        guild = next((g for g in current_user.guilds if g.get('id') == server.get('id')), None)
-        if not guild:
-            continue
-        count = len(guild.get('coleccionables', []))
-        top_servers.append({
-            "id": server.get("id"),
-            "name": server.get("name"),
-            "icon": server.get("icon"),
-            "coleccionables_count": count
-        })
+    for server in shared:
+        guild = user_guild_map.get(server["id"], {})
+        count = len(guild.get("coleccionables", []))
+        top_servers.append({**server, "coleccionables_count": count})
     top_servers.sort(key=lambda s: s["coleccionables_count"], reverse=True)
     return jsonify(top_servers)
 

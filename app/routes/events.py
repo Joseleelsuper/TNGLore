@@ -16,6 +16,7 @@ from flask_login import login_required, current_user
 
 from app import mongo
 from app.models.user import invalidate_user_cache
+from app.utils.bot_servers import get_shared_bot_servers
 from app.utils.game_config import get_chest_images
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,10 @@ def _get_active_events() -> List[Dict[str, Any]]:
     query = {
         "active": True,
         "start_date": {"$lte": now},
-        "end_date": {"$gte": now},
+        "$or": [
+            {"end_date": {"$gte": now}},
+            {"end_date": None},
+        ],
     }
     events = list(mongo.events.find(query).sort("start_date", -1))
     for ev in events:
@@ -232,14 +236,13 @@ def active_events() -> tuple:
             doc["event_id"]: doc for doc in progress_docs
         }
 
-        # User guilds for server selection
-        user_guilds: List[Dict[str, str]] = []
-        if hasattr(current_user, "guilds") and current_user.guilds:
-            user_guilds = [
-                {"id": g.get("id", ""), "name": g.get("name", "Servidor")}
-                for g in current_user.guilds
-                if g.get("id")
-            ]
+        # Only show servers the user shares with the bot
+        shared_servers = get_shared_bot_servers(current_user.guilds or [])
+        user_guilds: List[Dict[str, str]] = [
+            {"id": s["id"], "name": s["name"]}
+            for s in shared_servers
+            if s.get("id")
+        ]
 
         result: List[Dict[str, Any]] = []
         for ev in events:
@@ -332,6 +335,11 @@ def claim_event_reward(event_id: str) -> tuple:
         now = datetime.now(timezone.utc)
         start = event.get("start_date")
         end = event.get("end_date")
+        # Ensure dates are timezone-aware (legacy docs may be stored naive)
+        if start and start.tzinfo is None:
+            start = start.replace(tzinfo=timezone.utc)
+        if end and end.tzinfo is None:
+            end = end.replace(tzinfo=timezone.utc)
         if start and now < start:
             return jsonify({"error": "Este evento aún no ha comenzado"}), 400
         if end and now > end:

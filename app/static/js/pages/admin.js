@@ -63,13 +63,14 @@ function setupEventListeners() {
 
 function setupOverlay() {
     const overlay = document.getElementById('overlay');
-    const closeBtn = document.querySelector('.close-btn');
-    closeBtn.onclick = () => overlay.style.display = 'none';
-    window.onclick = (event) => {
-        if (event.target == overlay) {
-            overlay.style.display = 'none';
-        }
-    };
+    // close-btn is created dynamically; use delegation instead
+    if (overlay) {
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay || event.target.classList.contains('close-btn')) {
+                overlay.style.display = 'none';
+            }
+        });
+    }
 }
 
 function cerrarOverlay() {
@@ -431,9 +432,8 @@ async function manejarSubmitColeccion(event) {
 
 async function manejarSubmitUsuario(event) {
     event.preventDefault();
-    const formData = new FormData(event.target);
-    const usuarioId = formData.get('id');
-    const nuevaContrasena = formData.get('password');
+    const usuarioId = event.target.getAttribute('data-id');
+    const nuevaContrasena = document.getElementById('usuario-password').value;
 
     try {
         await fetchData(`/api/usuarios/${usuarioId}/cambiar-contrasena`, 'POST', { password: nuevaContrasena });
@@ -1210,7 +1210,10 @@ async function cargarEventosUsuario(usuarioId) {
             `;
 
             row.querySelectorAll('.mini-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
+                btn.type = 'button';
+                btn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     const action = btn.dataset.action;
                     try {
                         await fetchData(`/api/admin/usuarios/${usuarioId}/events/${ev.event_id}`, 'PUT', { action });
