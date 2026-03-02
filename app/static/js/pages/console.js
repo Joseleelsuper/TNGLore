@@ -24,15 +24,24 @@ function renderChestLogs(logs) {
         if (!log.username) return;
         const card = document.createElement('div');
         card.className = 'log-card';
-        const rarityClass = (log.chest?.rareza || '').toLowerCase();
         const avatar = log.pfp || DEFAULT_AVATAR;
+        const isCardLog = log.type === 'card';
+        const rarityClass = isCardLog
+            ? (log.card?.rareza || '').toLowerCase()
+            : (log.chest?.rareza || '').toLowerCase();
+        const rarityLabel = isCardLog
+            ? (log.card?.rareza || '?')
+            : (log.chest?.rareza || '?');
+        const actionText = isCardLog
+            ? `ha conseguido la carta <em>${log.card?.nombre || 'desconocida'}</em>`
+            : 'ha conseguido un cofre';
         card.innerHTML = `
             <img class="log-avatar" src="${avatar}" alt="" loading="lazy"
                  onerror="this.src='${DEFAULT_AVATAR}'">
             <div class="log-body">
                 <span class="log-username">${log.username}</span>
-                <span class="log-text">ha conseguido un cofre</span>
-                <span class="log-rareza ${rarityClass}">${log.chest?.rareza || '?'}</span>
+                <span class="log-text">${actionText}</span>
+                <span class="log-rareza ${rarityClass}">${rarityLabel}</span>
             </div>
             <span class="log-date">${formatRelativeDate(log.date)}</span>
         `;

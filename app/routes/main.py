@@ -74,8 +74,15 @@ def cofres_log() -> tuple:
             if not isinstance(log.get("date"), str) and isinstance(log.get("date"), datetime):
                 log["date"] = log["date"].isoformat() + "Z"
             
-            chest_rarity = chests_map.get(log.get("chest_id"), "Desconocida")
-            log["chest"] = {"rareza": chest_rarity}
+            log_type = log.get("type", "chest")
+            if log_type == "card":
+                log["card"] = {
+                    "nombre": log.get("card_nombre", ""),
+                    "rareza": log.get("card_rareza", ""),
+                }
+            else:
+                chest_rarity = chests_map.get(log.get("chest_id"), "Desconocida")
+                log["chest"] = {"rareza": chest_rarity}
             log["pfp"] = users_info.get(username, "")
             filtered_logs.append(log)
         

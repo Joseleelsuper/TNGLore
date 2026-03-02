@@ -408,6 +408,14 @@ def claim_event_reward(event_id: str) -> tuple:
                 result_data["rarity"] = "legendaria"
                 result_data["chest_id"] = chest_id
                 result_data["fallback"] = True
+                if chest_id:
+                    mongo.chest_logs.insert_one({
+                        "date": now,
+                        "chest_id": chest_id,
+                        "username": current_user.username,
+                        "type": "chest",
+                        "source": "event",
+                    })
 
         elif r_type == "chest":
             rarity = reward.get("rarity", "comun")
@@ -415,6 +423,14 @@ def claim_event_reward(event_id: str) -> tuple:
             result_data["rarity"] = rarity
             result_data["chest_id"] = chest_id
             result_data["image"] = get_chest_images().get(rarity, "")
+            if chest_id:
+                mongo.chest_logs.insert_one({
+                    "date": now,
+                    "chest_id": chest_id,
+                    "username": current_user.username,
+                    "type": "chest",
+                    "source": "event",
+                })
 
         elif r_type == "card":
             card_id = reward.get("card_id")
@@ -434,6 +450,14 @@ def claim_event_reward(event_id: str) -> tuple:
 
             if card_data:
                 result_data["card"] = card_data
+                mongo.chest_logs.insert_one({
+                    "date": now,
+                    "username": current_user.username,
+                    "type": "card",
+                    "source": "event",
+                    "card_nombre": card_data.get("nombre", ""),
+                    "card_rareza": card_data.get("rareza", ""),
+                })
             else:
                 # Fallback: chest of the specified rarity
                 fallback_rarity = rarity or "comun"
@@ -444,6 +468,14 @@ def claim_event_reward(event_id: str) -> tuple:
                 result_data["rarity"] = fallback_rarity
                 result_data["chest_id"] = chest_id
                 result_data["fallback"] = True
+                if chest_id:
+                    mongo.chest_logs.insert_one({
+                        "date": now,
+                        "chest_id": chest_id,
+                        "username": current_user.username,
+                        "type": "chest",
+                        "source": "event",
+                    })
 
         # Update progress
         is_completed = current_day >= days_count
