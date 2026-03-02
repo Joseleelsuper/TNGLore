@@ -21,7 +21,13 @@ MADRID_TZ = ZoneInfo("Europe/Madrid")
 
 def _parse_madrid_to_utc(dt_str: str) -> datetime:
     """Parsea una cadena datetime sin timezone como hora de Madrid y la convierte a UTC."""
-    naive_dt = datetime.fromisoformat(dt_str)
+    try:
+        naive_dt = datetime.fromisoformat(dt_str)
+    except ValueError as exc:
+        raise ValueError(
+            f"Invalid datetime string for _parse_madrid_to_utc: {dt_str!r}. "
+            "Expected an ISO 8601 format like 'YYYY-MM-DDTHH:MM[:SS[.ffffff]]'."
+        ) from exc
     if naive_dt.tzinfo is not None:
         return naive_dt.astimezone(timezone.utc)
     return naive_dt.replace(tzinfo=MADRID_TZ).astimezone(timezone.utc)

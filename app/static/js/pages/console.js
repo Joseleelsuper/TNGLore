@@ -240,8 +240,14 @@ async function claimEventReward(btn, eventId, reward) {
     try {
         let serverId = '';
 
-        // Ask for server if reward needs it (chest or card) and user has guilds
-        if (reward.type !== 'code' && _userGuilds.length > 0) {
+        // If reward needs a server (chest or card), ensure the user has guilds and ask for one
+        if (reward.type !== 'code') {
+            if (!_userGuilds || _userGuilds.length === 0) {
+                showErrorPopup('Para reclamar cofres o cartas, primero debes unirte a un servidor de TNGLore en Discord.');
+                btn.disabled = false;
+                btn.textContent = 'Reclamar';
+                return;
+            }
             const emoji = reward.type === 'card' ? '🃏' : (RARITY_EMOJIS[reward.rarity] || '📦');
             const title = reward.type === 'card'
                 ? `¡Carta${reward.card_name ? ': ' + reward.card_name : ''}!`

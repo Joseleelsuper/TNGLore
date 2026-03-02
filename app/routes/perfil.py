@@ -138,13 +138,12 @@ def api_opening_history():
                 entry["opened_at"] = entry["opened_at"].isoformat()
 
         # Resolver chest_source (guild ID) a nombre de servidor
-        guild_name_map = {}
-        if hasattr(current_user, 'guilds') and current_user.guilds:
-            guild_name_map = {
-                g.get("id", ""): g.get("name", "Servidor")
-                for g in current_user.guilds
-                if g.get("id")
-            }
+        guilds = getattr(current_user, "guilds", None) or []
+        guild_name_map = {
+            g.get("id", ""): g.get("name", "Servidor")
+            for g in guilds
+            if g.get("id")
+        }
 
         for entry in entries:
             source = entry.get("chest_source", "")
