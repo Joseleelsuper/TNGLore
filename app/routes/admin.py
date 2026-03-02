@@ -1,15 +1,36 @@
 import requests
 import base64
 import os
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+from typing import Any, Dict, List
 
 from flask import Blueprint, current_app, render_template, request, jsonify
 from flask_login import login_required, current_user
 from bson.objectid import ObjectId
 
-from app import mongo, cache, bcrypt
+from app import mongo, bcrypt
 from app.utils.adminRequired import admin_required
 from app.utils.images import get_images
 from app.utils.cache_manager import safe_memoize, safe_delete_memoized
+from app.models.user import invalidate_user_cache
+
+
+MADRID_TZ = ZoneInfo("Europe/Madrid")
+
+
+def _parse_madrid_to_utc(dt_str: str) -> datetime:
+    """Parsea una cadena datetime sin timezone como hora de Madrid y la convierte a UTC."""
+    try:
+        naive_dt = datetime.fromisoformat(dt_str)
+    except ValueError as exc:
+        raise ValueError(
+            f"Invalid datetime string for _parse_madrid_to_utc: {dt_str!r}. "
+            "Expected an ISO 8601 format like 'YYYY-MM-DDTHH:MM[:SS[.ffffff]]'."
+        ) from exc
+    if naive_dt.tzinfo is not None:
+        return naive_dt.astimezone(timezone.utc)
+    return naive_dt.replace(tzinfo=MADRID_TZ).astimezone(timezone.utc)
 
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
@@ -611,3 +632,551 @@ def eliminar_coleccion(id):
         
         return jsonify({"message": "Colección y cartas asociadas eliminadas"})
     return jsonify({"error": "Colección no encontrada"}), 404
+
+
+# ─── Códigos (pool para recompensa día 7) ────────────────────────────
+
+
+@safe_memoize(timeout=300)  # 5 minutos
+def get_all_codes_cached() -> List[Dict[str, Any]]:
+    """Obtiene todos los códigos con caché para admin."""
+    try:
+        codes = list(mongo.codes.find().sort("created_at", -1))
+        for code in codes:
+            code["_id"] = str(code["_id"])
+            if code.get("expires_at"):
+                code["expires_at"] = code["expires_at"].isoformat()
+            if code.get("assigned_at"):
+                code["assigned_at"] = code["assigned_at"].isoformat()
+            if code.get("created_at"):
+                code["created_at"] = code["created_at"].isoformat()
+        return codes
+    except Exception as e:
+        current_app.logger.error(f"Error getting codes: {e}")
+        return []
+
+
+def invalidate_codes_cache() -> None:
+    """Invalida el caché de códigos cuando se modifican."""
+    safe_delete_memoized(get_all_codes_cached)
+
+
+@admin_bp.route("/api/admin/codigos", methods=["GET"])
+@login_required
+@admin_required
+def api_codigos() -> tuple:
+    """Lista todos los códigos del pool."""
+    try:
+        codes = get_all_codes_cached()
+        return jsonify(codes), 200
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener códigos: {e}", exc_info=True)
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+
+@admin_bp.route("/api/admin/codigos", methods=["POST"])
+@login_required
+@admin_required
+def crear_codigo() -> tuple:
+    """Crea uno o varios códigos en el pool."""
+    try:
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({"error": "JSON requerido"}), 400
+
+        # Soporte batch: {"codes": [{"code":"...","description":"..."}]} o single
+        code_list = data.get("codes") if isinstance(data.get("codes"), list) else [data]
+
+        created_ids: List[str] = []
+        now = datetime.now(timezone.utc)
+
+        for item in code_list:
+            code_value = item.get("code", "").strip()
+            if not code_value:
+                continue
+
+            expires_at = None
+            if item.get("expires_at"):
+                try:
+                    expires_at = datetime.fromisoformat(item["expires_at"])
+                except (ValueError, TypeError):
+                    pass
+
+            doc = {
+                "code": code_value,
+                "description": item.get("description", ""),
+                "link": item.get("link", "").strip() or None,
+                "active": True,
+                "assigned_to": None,
+                "assigned_at": None,
+                "created_at": now,
+                "expires_at": expires_at,
+            }
+            result = mongo.codes.insert_one(doc)
+            created_ids.append(str(result.inserted_id))
+
+        if not created_ids:
+            return jsonify({"error": "No se proporcionaron códigos válidos"}), 400
+
+        invalidate_codes_cache()
+        return jsonify({"message": f"{len(created_ids)} código(s) creado(s)", "ids": created_ids}), 201
+
+    except Exception as e:
+        current_app.logger.error(f"Error al crear código: {e}", exc_info=True)
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+
+@admin_bp.route("/api/admin/codigos/<id>", methods=["PUT"])
+@login_required
+@admin_required
+def actualizar_codigo(id: str) -> tuple:
+    """Actualiza un código existente."""
+    try:
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({"error": "JSON requerido"}), 400
+
+        updates: Dict[str, Any] = {}
+        if "code" in data:
+            updates["code"] = data["code"].strip()
+        if "description" in data:
+            updates["description"] = data["description"]
+        if "link" in data:
+            link_val = (data["link"] or "").strip()
+            updates["link"] = link_val if link_val else None
+        if "active" in data:
+            updates["active"] = bool(data["active"])
+        if "expires_at" in data:
+            try:
+                updates["expires_at"] = datetime.fromisoformat(data["expires_at"]) if data["expires_at"] else None
+            except (ValueError, TypeError):
+                pass
+
+        if not updates:
+            return jsonify({"message": "Sin cambios"}), 200
+
+        result = mongo.codes.update_one({"_id": ObjectId(id)}, {"$set": updates})
+        if result.matched_count == 0:
+            return jsonify({"error": "Código no encontrado"}), 404
+
+        invalidate_codes_cache()
+        return jsonify({"message": "Código actualizado", "id": id}), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error al actualizar código: {e}", exc_info=True)
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+
+@admin_bp.route("/api/admin/codigos/<id>", methods=["DELETE"])
+@login_required
+@admin_required
+def eliminar_codigo(id: str) -> tuple:
+    """Elimina un código del pool."""
+    try:
+        result = mongo.codes.delete_one({"_id": ObjectId(id)})
+        if result.deleted_count == 0:
+            return jsonify({"error": "Código no encontrado"}), 404
+
+        invalidate_codes_cache()
+        return jsonify({"message": "Código eliminado"}), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error al eliminar código: {e}", exc_info=True)
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+
+# ─── Toggle deny_code_reward por usuario ─────────────────────────────
+
+
+@admin_bp.route("/api/admin/usuarios/<id>/deny-code", methods=["PUT"])
+@login_required
+@admin_required
+def toggle_deny_code(id: str) -> tuple:
+    """Activa o desactiva la denegación de código para un usuario."""
+    try:
+        data = request.get_json(silent=True)
+        if data is None or "deny_code_reward" not in data:
+            return jsonify({"error": "Campo deny_code_reward requerido"}), 400
+
+        deny = bool(data["deny_code_reward"])
+        result = mongo.users.update_one(
+            {"_id": ObjectId(id)},
+            {"$set": {"deny_code_reward": deny}},
+        )
+        if result.matched_count == 0:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        invalidate_users_cache()
+        invalidate_user_cache(id)
+
+        return jsonify({"message": "Actualizado", "deny_code_reward": deny}), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error toggling deny_code: {e}", exc_info=True)
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+
+@admin_bp.route("/api/admin/usuarios/<id>/reset", methods=["PUT"])
+@login_required
+@admin_required
+def reset_usuario(id: str) -> tuple:
+    """Resetea cofres, cartas o ambos de un usuario."""
+    try:
+        data = request.get_json(silent=True)
+        if not data or "type" not in data:
+            return jsonify({"error": "Campo 'type' requerido (chests, cards, all)"}), 400
+
+        reset_type: str = data["type"]
+        if reset_type not in ("chests", "cards", "all"):
+            return jsonify({"error": "Tipo inválido. Usa: chests, cards, all"}), 400
+
+        user = mongo.users.find_one({"_id": ObjectId(id)})
+        if not user:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        updates: Dict[str, Any] = {}
+        summary: Dict[str, int] = {}
+
+        if reset_type in ("chests", "all"):
+            old_chests = user.get("chests", [])
+            summary["chests_removed"] = len(old_chests)
+            updates["chests"] = []
+
+        if reset_type in ("cards", "all"):
+            total_cards = 0
+            guilds = user.get("guilds", [])
+            for guild in guilds:
+                total_cards += len(guild.get("coleccionables", []))
+                guild["coleccionables"] = []
+            summary["cards_removed"] = total_cards
+            updates["guilds"] = guilds
+
+        if updates:
+            mongo.users.update_one(
+                {"_id": ObjectId(id)},
+                {"$set": updates},
+            )
+
+        invalidate_users_cache()
+        invalidate_user_cache(id)
+
+        return jsonify({"message": "Datos reseteados", "summary": summary}), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error resetting user data: {e}", exc_info=True)
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+
+# =============================================================================
+# EVENTOS – CRUD
+# =============================================================================
+
+@safe_memoize(timeout=300)
+def get_all_events_cached() -> List[Dict[str, Any]]:
+    """Obtiene todos los eventos con caché."""
+    try:
+        events = list(mongo.events.find().sort("created_at", -1))
+        for ev in events:
+            ev["_id"] = str(ev["_id"])
+            for field in ("start_date", "end_date", "created_at", "updated_at"):
+                if isinstance(ev.get(field), datetime):
+                    ev[field] = ev[field].isoformat()
+        return events
+    except Exception as e:
+        current_app.logger.error(f"Error getting events: {e}")
+        return []
+
+
+def invalidate_events_cache() -> None:
+    safe_delete_memoized(get_all_events_cached)
+
+
+@admin_bp.route("/api/admin/eventos", methods=["GET"])
+@login_required
+@admin_required
+def api_eventos() -> tuple:
+    """Lista todos los eventos."""
+    return jsonify(get_all_events_cached()), 200
+
+
+@admin_bp.route("/api/admin/eventos", methods=["POST"])
+@login_required
+@admin_required
+def crear_evento() -> tuple:
+    """Crea un nuevo evento."""
+    try:
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({"error": "Datos requeridos"}), 400
+
+        name = (data.get("name") or "").strip()
+        if not name:
+            return jsonify({"error": "Nombre requerido"}), 400
+
+        days_count = int(data.get("days_count", 0))
+        if days_count < 1 or days_count > 30:
+            return jsonify({"error": "days_count debe ser entre 1 y 30"}), 400
+
+        rewards: List[Dict[str, Any]] = data.get("rewards", [])
+        if len(rewards) != days_count:
+            return jsonify({"error": f"Se necesitan {days_count} recompensas"}), 400
+
+        # Validate each reward
+        for i, rw in enumerate(rewards):
+            rtype = rw.get("type")
+            if rtype not in ("chest", "code", "card"):
+                return jsonify({"error": f"Tipo inválido en día {i+1}"}), 400
+            if rtype == "chest" and rw.get("rarity") not in ("comun", "rara", "epica", "legendaria"):
+                return jsonify({"error": f"Rareza inválida en día {i+1}"}), 400
+            if rtype == "card":
+                if not rw.get("card_id") and rw.get("rarity") not in ("comun", "rara", "epica", "legendaria"):
+                    return jsonify({"error": f"Carta o rareza requerida en día {i+1}"}), 400
+
+        start_date = _parse_madrid_to_utc(data["start_date"]) if data.get("start_date") else datetime.now(timezone.utc)
+        end_date = _parse_madrid_to_utc(data["end_date"]) if data.get("end_date") else None
+
+        event_doc: Dict[str, Any] = {
+            "name": name,
+            "description": (data.get("description") or "").strip(),
+            "days_count": days_count,
+            "start_date": start_date,
+            "end_date": end_date,
+            "active": bool(data.get("active", True)),
+            "rewards": rewards,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+        }
+
+        result = mongo.events.insert_one(event_doc)
+        invalidate_events_cache()
+
+        return jsonify({"message": "Evento creado", "id": str(result.inserted_id)}), 201
+
+    except (ValueError, KeyError) as ve:
+        return jsonify({"error": f"Datos inválidos: {ve}"}), 400
+    except Exception as e:
+        current_app.logger.error(f"Error creating event: {e}", exc_info=True)
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+
+@admin_bp.route("/api/admin/eventos/<id>", methods=["GET"])
+@login_required
+@admin_required
+def api_evento_detalle(id: str) -> tuple:
+    """Obtiene detalle de un evento."""
+    try:
+        ev = mongo.events.find_one({"_id": ObjectId(id)})
+        if not ev:
+            return jsonify({"error": "Evento no encontrado"}), 404
+        ev["_id"] = str(ev["_id"])
+        for field in ("start_date", "end_date", "created_at", "updated_at"):
+            if isinstance(ev.get(field), datetime):
+                ev[field] = ev[field].isoformat()
+        return jsonify(ev), 200
+    except Exception as e:
+        current_app.logger.error(f"Error getting event: {e}", exc_info=True)
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+
+@admin_bp.route("/api/admin/eventos/<id>", methods=["PUT"])
+@login_required
+@admin_required
+def actualizar_evento(id: str) -> tuple:
+    """Actualiza un evento existente."""
+    try:
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({"error": "Datos requeridos"}), 400
+
+        update: Dict[str, Any] = {"updated_at": datetime.now(timezone.utc)}
+
+        if "name" in data:
+            name = (data["name"] or "").strip()
+            if not name:
+                return jsonify({"error": "Nombre no puede estar vacío"}), 400
+            update["name"] = name
+
+        if "description" in data:
+            update["description"] = (data["description"] or "").strip()
+
+        if "days_count" in data:
+            dc = int(data["days_count"])
+            if dc < 1 or dc > 30:
+                return jsonify({"error": "days_count debe ser entre 1 y 30"}), 400
+            update["days_count"] = dc
+
+        if "rewards" in data:
+            rewards = data["rewards"]
+            for i, rw in enumerate(rewards):
+                rtype = rw.get("type")
+                if rtype not in ("chest", "code", "card"):
+                    return jsonify({"error": f"Tipo inválido en día {i+1}"}), 400
+                if rtype == "chest" and rw.get("rarity") not in ("comun", "rara", "epica", "legendaria"):
+                    return jsonify({"error": f"Rareza inválida en día {i+1}"}), 400
+                if rtype == "card":
+                    if not rw.get("card_id") and rw.get("rarity") not in ("comun", "rara", "epica", "legendaria"):
+                        return jsonify({"error": f"Carta o rareza requerida en día {i+1}"}), 400
+            update["rewards"] = rewards
+
+        if "active" in data:
+            update["active"] = bool(data["active"])
+
+        if "start_date" in data:
+            update["start_date"] = _parse_madrid_to_utc(data["start_date"]) if data["start_date"] else None
+
+        if "end_date" in data:
+            update["end_date"] = _parse_madrid_to_utc(data["end_date"]) if data["end_date"] else None
+
+        result = mongo.events.update_one({"_id": ObjectId(id)}, {"$set": update})
+        if result.matched_count == 0:
+            return jsonify({"error": "Evento no encontrado"}), 404
+
+        invalidate_events_cache()
+        return jsonify({"message": "Evento actualizado"}), 200
+
+    except (ValueError, KeyError) as ve:
+        return jsonify({"error": f"Datos inválidos: {ve}"}), 400
+    except Exception as e:
+        current_app.logger.error(f"Error updating event: {e}", exc_info=True)
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+
+@admin_bp.route("/api/admin/eventos/<id>", methods=["DELETE"])
+@login_required
+@admin_required
+def eliminar_evento(id: str) -> tuple:
+    """Elimina un evento y todo el progreso asociado."""
+    try:
+        result = mongo.events.delete_one({"_id": ObjectId(id)})
+        if result.deleted_count == 0:
+            return jsonify({"error": "Evento no encontrado"}), 404
+
+        # Limpiar progreso de todos los usuarios para este evento
+        deleted = mongo.event_progress.delete_many({"event_id": id})
+
+        invalidate_events_cache()
+        return jsonify({
+            "message": "Evento eliminado",
+            "progress_entries_removed": deleted.deleted_count,
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error deleting event: {e}", exc_info=True)
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+
+# =============================================================================
+# EVENTOS – Gestión de progreso de usuario
+# =============================================================================
+
+@admin_bp.route("/api/admin/usuarios/<id>/events", methods=["GET"])
+@login_required
+@admin_required
+def usuario_eventos(id: str) -> tuple:
+    """Lista el progreso de un usuario en todos los eventos."""
+    try:
+        user = mongo.users.find_one({"_id": ObjectId(id)})
+        if not user:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        email = user["email"]
+        all_events = list(mongo.events.find())
+        progress_docs = {
+            doc["event_id"]: doc
+            for doc in mongo.event_progress.find({"user_email": email})
+        }
+
+        result: List[Dict[str, Any]] = []
+        for ev in all_events:
+            eid = str(ev["_id"])
+            prog = progress_docs.get(eid)
+            result.append({
+                "event_id": eid,
+                "name": ev.get("name", ""),
+                "days_count": ev.get("days_count", 0),
+                "active": ev.get("active", False),
+                "progress": prog["progress"] if prog else 0,
+                "completed": prog["completed"] if prog else False,
+                "last_claimed": prog["last_claimed"].isoformat() if prog and prog.get("last_claimed") else None,
+            })
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting user events: {e}", exc_info=True)
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+
+@admin_bp.route("/api/admin/usuarios/<id>/events/<event_id>", methods=["PUT"])
+@login_required
+@admin_required
+def modificar_progreso_evento(id: str, event_id: str) -> tuple:
+    """Modifica el progreso de un usuario en un evento.
+
+    Body JSON: { "action": "reset" | "advance" | "rewind" | "set", "value": int? }
+    """
+    try:
+        data = request.get_json(silent=True)
+        if not data or "action" not in data:
+            return jsonify({"error": "Campo 'action' requerido"}), 400
+
+        action: str = data["action"]
+        if action not in ("reset", "advance", "rewind", "set"):
+            return jsonify({"error": "Acción inválida. Usa: reset, advance, rewind, set"}), 400
+
+        user = mongo.users.find_one({"_id": ObjectId(id)})
+        if not user:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        event = mongo.events.find_one({"_id": ObjectId(event_id)})
+        if not event:
+            return jsonify({"error": "Evento no encontrado"}), 404
+
+        email = user["email"]
+        days_count = event.get("days_count", 7)
+
+        prog = mongo.event_progress.find_one({"user_email": email, "event_id": event_id})
+        current_progress = prog["progress"] if prog else 0
+
+        if action == "reset":
+            new_progress = 0
+        elif action == "advance":
+            new_progress = min(current_progress + 1, days_count)
+        elif action == "rewind":
+            new_progress = max(current_progress - 1, 0)
+        elif action == "set":
+            val = int(data.get("value", 0))
+            new_progress = max(0, min(val, days_count))
+        else:
+            new_progress = current_progress
+
+        completed = new_progress >= days_count
+
+        mongo.event_progress.update_one(
+            {"user_email": email, "event_id": event_id},
+            {
+                "$set": {
+                    "progress": new_progress,
+                    "completed": completed,
+                    "last_claimed": None if action == "reset" else prog.get("last_claimed") if prog else None,
+                },
+                "$setOnInsert": {
+                    "user_email": email,
+                    "event_id": event_id,
+                },
+            },
+            upsert=True,
+        )
+
+        invalidate_user_cache(id)
+
+        return jsonify({
+            "message": "Progreso actualizado",
+            "progress": new_progress,
+            "completed": completed,
+            "days_count": days_count,
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error modifying event progress: {e}", exc_info=True)
+        return jsonify({"error": "Error interno del servidor"}), 500

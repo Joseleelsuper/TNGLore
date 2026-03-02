@@ -1,5 +1,14 @@
 import { cargarCartas, abrirOverlayCarta } from '../utils/shared.js';
 
+export const PLACEHOLDER_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%23dee2e6'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20' fill='%23868e96'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E";
+export function fixGuildIcon(url) {
+    if (!url) return PLACEHOLDER_ICON;
+    if (url.includes('cdn.discordapp.com') && !/\.(png|jpg|jpeg|webp|gif)(\?.*)?$/i.test(url)) {
+        return url + '.png';
+    }
+    return url;
+}
+
 // Obtiene datos del usuario (guilds y sus coleccionables)
 async function cargarDatosUsuario() {
     try {
@@ -36,7 +45,8 @@ function renderGuildCards(guild, cards, sortCriterio) {
     guildContainer.className = 'guild-section';
     guildContainer.innerHTML = `
         <div class="guild-header">
-            <img class="guild-icon" src="${guild.icon || '/static/images/placeholder-server.png'}" alt="${guild.name}">
+            <img class="guild-icon" src="${fixGuildIcon(guild.icon)}" alt="${guild.name}"
+                 onerror="this.src='${PLACEHOLDER_ICON}'">
             <h2 class="guild-title">${guild.name}</h2>
         </div>
     `;

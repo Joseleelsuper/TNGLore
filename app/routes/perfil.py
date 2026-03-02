@@ -4,11 +4,10 @@ from flask_login import login_required, current_user, logout_user
 from app import bcrypt, mongo
 from app.utils.images import get_images
 from app.utils.validation_utils import validate_user_input
+from app.utils.bot_servers import get_shared_bot_servers
 from app.models.user import invalidate_user_cache
 
 import logging
-import os
-import requests
 
 logger = logging.getLogger(__name__)
 
@@ -76,30 +75,17 @@ def perfil():
 @login_required
 def api_bot_servers():
     """Endpoint AJAX para obtener servidores del bot sin bloquear el render de /perfil."""
-    api_secret = os.getenv("API_SECRET")
-    servers_api_url = "https://172.93.110.38:4009/getBotServers"
-    headers = {"X-API-KEY": api_secret}
-    try:
-        response = requests.get(servers_api_url, headers=headers, verify=False, timeout=3)
-        response.raise_for_status()
-        servers_data = response.json()
-    except Exception as e:
-        logger.warning(f"Error al conectar con la API del bot: {e}")
-        return jsonify([])
-    
-    # Combinar con guilds del usuario
+    shared = get_shared_bot_servers(current_user.guilds or [])
+
+    # Enriquecer con conteo de coleccionables del usuario
+    user_guild_map = {
+        g.get("id"): g for g in (current_user.guilds or []) if g.get("id")
+    }
     top_servers = []
-    for server in servers_data:
-        guild = next((g for g in current_user.guilds if g.get('id') == server.get('id')), None)
-        if not guild:
-            continue
-        count = len(guild.get('coleccionables', []))
-        top_servers.append({
-            "id": server.get("id"),
-            "name": server.get("name"),
-            "icon": server.get("icon"),
-            "coleccionables_count": count
-        })
+    for server in shared:
+        guild = user_guild_map.get(server["id"], {})
+        count = len(guild.get("coleccionables", []))
+        top_servers.append({**server, "coleccionables_count": count})
     top_servers.sort(key=lambda s: s["coleccionables_count"], reverse=True)
     return jsonify(top_servers)
 
@@ -123,3 +109,57 @@ def delete_account():
     logout_user()
 
     return jsonify({'message': 'Cuenta eliminada correctamente.'}), 200
+
+
+@perfil_bp.route('/api/user/opening-history')
+@login_required
+def api_opening_history():
+    """Historial de cofres abiertos por el usuario, paginado."""
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+        limit = min(50, max(1, int(request.args.get('limit', 10))))
+        skip = (page - 1) * limit
+
+        total = mongo.opening_history.count_documents({"user_email": current_user.email})
+
+        entries = list(
+            mongo.opening_history.find(
+                {"user_email": current_user.email},
+                {"_id": 0, "user_email": 0},
+            )
+            .sort("opened_at", -1)
+            .skip(skip)
+            .limit(limit)
+        )
+
+        # Serializar datetimes
+        for entry in entries:
+            if entry.get("opened_at"):
+                entry["opened_at"] = entry["opened_at"].isoformat()
+
+        # Resolver chest_source (guild ID) a nombre de servidor
+        guilds = getattr(current_user, "guilds", None) or []
+        guild_name_map = {
+            g.get("id", ""): g.get("name", "Servidor")
+            for g in guilds
+            if g.get("id")
+        }
+
+        for entry in entries:
+            source = entry.get("chest_source", "")
+            if source == "daily_reward":
+                entry["chest_source"] = "Recompensa diaria"
+            elif source in guild_name_map:
+                entry["chest_source"] = guild_name_map[source]
+            # else: keep raw ID as fallback
+
+        return jsonify({
+            "entries": entries,
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "has_more": skip + limit < total,
+        })
+    except Exception as e:
+        logger.error(f"Error fetching opening history: {e}", exc_info=True)
+        return jsonify({"error": "Error interno"}), 500

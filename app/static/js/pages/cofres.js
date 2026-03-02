@@ -1,5 +1,14 @@
 import { abrirOverlayCarta } from '../utils/shared.js';
 
+const PLACEHOLDER_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%23dee2e6'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20' fill='%23868e96'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E";
+function fixGuildIcon(url) {
+    if (!url) return PLACEHOLDER_ICON;
+    if (url.includes('cdn.discordapp.com') && !/\.(png|jpg|jpeg|webp|gif)(\?.*)?$/i.test(url)) {
+        return url + '.png';
+    }
+    return url;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const serversContainer = document.getElementById('servers-container');
     const cardsDisplay = document.getElementById('cards-display');
@@ -62,7 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const serverHeader = document.createElement('div');
             serverHeader.className = 'server-header';
             serverHeader.innerHTML = `
-                <img class="server-icon" src="${serverData.icon || '/static/images/placeholder-server.png'}" alt="${serverData.name}">
+                <img class="server-icon" src="${fixGuildIcon(serverData.icon)}" alt="${serverData.name}"
+                     onerror="this.src='${PLACEHOLDER_ICON}'">
                 <h2 class="server-title">${serverData.name}</h2>
             `;
             serverSection.appendChild(serverHeader);

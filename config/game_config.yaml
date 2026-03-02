@@ -1,0 +1,49 @@
+# ==============================================================================
+# TNGLore Web - Game Configuration (Hot-Reloadable)
+# ==============================================================================
+# Este fichero se recarga automáticamente cada 60 segundos sin reiniciar la app.
+# Modifica los valores y se aplicarán en caliente.
+# ==============================================================================
+
+# Configuración de cofres: cantidad de cartas y probabilidades por rareza
+# probabilities: [%comun, %rara, %epica, %legendaria] — deben sumar 100
+chest_config:
+  comun:
+    cards: 2
+    probabilities: [70, 16, 12, 2]
+    name: "Común"
+  rara:
+    cards: 3
+    probabilities: [35, 45, 15, 5]
+    name: "Raro"
+  epica:
+    cards: 4
+    probabilities: [20, 30, 35, 15]
+    name: "Épico"
+  legendaria:
+    cards: 5
+    probabilities: [10, 25, 35, 30]
+    name: "Legendario"
+
+# Rarezas de cartas (orden importa para el sistema de probabilidades)
+card_rarities:
+  - comun
+  - rara
+  - epica
+  - legendaria
+
+# Colores asociados a cada rareza (hex)
+rarity_colors:
+  comun: "#9e9e9e"
+  rara: "#4CAF50"
+  epica: "#9C27B0"
+  legendaria: "#FFD700"
+
+# Imágenes de cofres por rareza (rutas relativas)
+chest_images:
+  comun: "/assets/images/cofre-comun.webp"
+  rara: "/assets/images/cofre-rara.webp"
+  epica: "/assets/images/cofre-epica.webp"
+  legendaria: "/assets/images/cofre-legendaria.webp"
+
+# ==============================================================================

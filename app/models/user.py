@@ -1,7 +1,8 @@
 from flask_login import UserMixin
 from app import mongo, bcrypt, login_manager
 from bson.objectid import ObjectId
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any, List
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ class User(UserMixin):
         guilds=None,
         chests=None,
         registration_method="Normal",
+        deny_code_reward: bool = False,
     ):
         self.username = username
         self.email = email
@@ -54,6 +56,7 @@ class User(UserMixin):
         self.guilds = guilds or []
         self.chests = chests or []
         self.registration_method = registration_method
+        self.deny_code_reward = deny_code_reward
 
     def get_id(self):
         return str(self._id)
@@ -91,6 +94,7 @@ class User(UserMixin):
             guilds=user_data.get("guilds", []),
             chests=user_data.get("chests", []),
             registration_method=user_data.get("registration_method", "Normal"),
+            deny_code_reward=user_data.get("deny_code_reward", False),
         )
 
     @staticmethod
@@ -160,8 +164,8 @@ class User(UserMixin):
             return User._from_dict(user_data)
         return None
     
-    def get_top_servers(self, limit=6):
-        # Ordenar servidores por cantidad de coleccionables
+    def get_top_servers(self, limit: int = 6) -> List[Dict[str, Any]]:
+        """Devuelve los servidores con más coleccionables."""
         sorted_servers = sorted(
             self.guilds,
             key=lambda x: len(x.get('coleccionables', [])),
@@ -173,5 +177,4 @@ class User(UserMixin):
 @login_manager.user_loader
 def load_user(user_id: str) -> Optional[User]:
     """Flask-Login user_loader. Usa caché in-process para evitar hit a MongoDB en cada request."""
-    return User.get_by_id(user_id)
     return User.get_by_id(user_id)
