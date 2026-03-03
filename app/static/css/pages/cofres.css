@@ -1,96 +1,93 @@
-/* Estilo general para contenedores de cofres */
+/* ── Cofres page ─────────────────────────────────────────── */
+
 #chest-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: var(--sp-4);
     justify-content: center;
-    margin: 2rem 0;
+    margin: var(--sp-6) 0;
 }
 
-/* Estilos para el contenedor de servidores */
+/* Servers container */
 #servers-container {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
-    padding: 2rem;
-    max-width: 1200px;
+    gap: var(--sp-6);
+    padding: var(--sp-6);
+    max-width: var(--container-max);
     margin: 0 auto;
 }
 
-/* Estilos para cada sección de servidor */
+/* Server section */
 .server-section {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    border: 1px solid #dee2e6;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-5);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
 .server-section:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-md);
 }
 
-/* Cabecera del servidor */
+/* Server header */
 .server-header {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
-    border-bottom: 2px solid #dee2e6;
-    margin-bottom: 1.5rem;
-    gap: 1rem;
-    background: linear-gradient(90deg, #4d7cff 0%, #6c5ce7 100%);
-    border-radius: 8px;
-    color: white;
+    padding: var(--sp-3) var(--sp-4);
+    margin-bottom: var(--sp-5);
+    gap: var(--sp-3);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+    border-radius: var(--radius-md);
+    color: #fff;
 }
 
 .server-icon {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid rgba(255,255,255,0.3);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: var(--shadow-sm);
     flex-shrink: 0;
-    aspect-ratio: 1 / 1;
-    display: block;
 }
 
 .server-title {
-    font-size: 1.8rem;
+    font-size: var(--fs-lg);
     margin: 0;
     text-align: center;
-    font-weight: bold;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    font-weight: 700;
 }
 
-/* Contenedor de cofres por servidor */
+/* Chest grid */
 .chest-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--sp-5);
     justify-items: center;
 }
 
-/* Estilos para las tarjetas de cofres */
+/* Chest card */
 .chest-card {
     position: relative;
-    width: 220px;
+    width: 200px;
     cursor: pointer;
-    border: 2px solid #dee2e6;
-    border-radius: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     overflow: hidden;
-    transition: all 0.3s ease;
-    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-fast);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
 }
 
 .chest-card:hover {
-    transform: translateY(-5px) scale(1.02);
-    border-color: #4d7cff;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    transform: translateY(-4px) scale(1.02);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-lg);
 }
 
 .chest-card img {
@@ -98,7 +95,7 @@
     height: 200px;
     object-fit: cover;
     display: block;
-    transition: transform 0.3s ease;
+    transition: transform var(--transition-base);
 }
 
 .chest-card:hover img {
@@ -109,128 +106,126 @@
     position: absolute;
     top: 8px;
     right: 8px;
-    background: linear-gradient(45deg, #ff6b6b 0%, #ee5a24 100%);
+    background: var(--color-danger);
     color: #fff;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.9rem;
-    font-weight: bold;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    border: 2px solid rgba(255,255,255,0.3);
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    box-shadow: var(--shadow-sm);
 }
 
 .chest-info {
-    padding: 1rem;
+    padding: var(--sp-3);
     text-align: center;
-    font-size: 0.95rem;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-top: 1px solid #dee2e6;
+    font-size: var(--fs-sm);
+    background: var(--color-surface-alt);
+    border-top: 1px solid var(--color-border);
 }
 
 .chest-rarity,
 .chest-server {
-    margin: 0.2rem 0;
+    margin: var(--sp-1) 0;
 }
 
 .chest-rarity strong,
 .chest-server strong {
-    font-weight: bold;
-    color: #000;
+    font-weight: 700;
+    color: var(--color-text);
 }
 
-/* Controles de apertura de cofres */
+/* Open chest controls */
 #open-chest-controls,
 #chest-results {
     text-align: center;
-    margin: 2rem auto;
+    margin: var(--sp-6) auto;
     max-width: 500px;
-    border: 2px solid #4d7cff;
-    padding: 1.5rem;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border: 1px solid var(--color-primary);
+    padding: var(--sp-5);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-md);
 }
 
-/* Estilos para visualizar las cartas ganadas */
+/* Cards display overlay */
 #cards-display {
     position: fixed;
-    top: 0; /* Cubrir toda la página, incluyendo el header */
+    top: 0;
     left: 0;
     width: 100%;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.75);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 999; /* Z-index menor que el overlay de información de carta */
-    padding: 2rem;
+    z-index: 999;
+    padding: var(--sp-6);
     box-sizing: border-box;
 }
 
 #cards-display > div:first-of-type {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border: 2px solid #4d7cff;
-    border-radius: 12px;
-    padding: 1.5rem;
-    max-width: 750px; /* Reducido de 1000px para que el contenedor sea más proporcionado */
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-5);
+    max-width: 750px;
     width: 100%;
     max-height: calc(100vh - 160px);
     overflow-y: auto;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-lg);
     text-align: center;
 }
 
 #cards-display h2 {
-    color: #4d7cff;
-    margin-bottom: 1.5rem;
-    font-size: 1.8rem;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    color: var(--color-primary);
+    margin-bottom: var(--sp-5);
+    font-size: var(--fs-xl);
 }
 
 #cards-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* Reducido para tarjetas más pequeñas */
-    gap: 1.5rem; /* Reducido el espacio entre tarjetas */
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--sp-4);
     justify-items: center;
-    margin: 1.5rem 0;
+    margin: var(--sp-5) 0;
 }
 
 .card-item {
-    border: 2px solid #dee2e6;
-    padding: 0.5rem;
-    border-radius: 12px;
-    width: 160px; /* Reducido para que sea más compacto */
+    border: 1px solid var(--color-border);
+    padding: var(--sp-2);
+    border-radius: var(--radius-md);
+    width: 150px;
     aspect-ratio: 9 / 16;
     box-sizing: border-box;
     overflow: hidden;
-    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-    transition: all 0.3s ease;
+    background: var(--color-surface);
+    transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-fast);
     cursor: pointer;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-card);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    position: relative; /* Para asegurar que las imágenes se queden dentro */
+    position: relative;
 }
 
 .card-item:hover {
     transform: translateY(-3px);
-    border-color: #4d7cff;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-md);
 }
 
 .card-item img.card-image {
     width: 100%;
     height: 75%;
-    object-fit: contain; /* Mantener aspect ratio */
+    object-fit: contain;
     display: block;
-    border-radius: 8px;
-    transition: transform 0.3s ease;
-    margin-bottom: 0.5rem;
-    max-height: 170px; /* Ajustado a un tamaño más proporcionado */
-    position: relative; /* Asegura que se mantenga en su contenedor */
-    top: 0; /* No flotante */
+    border-radius: var(--radius-sm);
+    transition: transform var(--transition-base);
+    margin-bottom: var(--sp-2);
+    max-height: 170px;
+    position: relative;
+    top: 0;
     left: 0;
 }
 
@@ -239,23 +234,23 @@
 }
 
 .card-item p {
-    margin: 0.3rem 0;
-    font-weight: bold;
-    color: #333;
-    font-size: 0.95rem;
+    margin: var(--sp-1) 0;
+    font-weight: 600;
+    color: var(--color-text);
+    font-size: var(--fs-sm);
     text-align: center;
 }
 
 .card-info {
     width: 100%;
     text-align: center;
-    margin-top: auto; /* Empuja la información hacia abajo */
+    margin-top: auto;
 }
 
 .card-name {
-    font-weight: bold;
-    font-size: 0.9rem; /* Reducido para tarjetas más pequeñas */
-    margin-bottom: 0.2rem !important;
+    font-weight: 600;
+    font-size: var(--fs-sm);
+    margin-bottom: var(--sp-1) !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -263,89 +258,83 @@
 
 .card-rarity {
     font-weight: 600;
-    font-size: 0.8rem; /* Reducido para tarjetas más pequeñas */
+    font-size: var(--fs-xs);
     text-transform: capitalize;
     margin-top: 0 !important;
 }
 
-/* Botón de cerrar cartas */
+/* Close button */
 #cards-display button#close-cards-btn {
-    background: linear-gradient(45deg, #ff6b6b 0%, #ee5a24 100%);
+    background: var(--color-danger);
     color: #fff;
     border: none;
-    padding: 0.8rem 1.5rem;
-    border-radius: 8px;
+    padding: 0.6rem 1.4rem;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 1rem;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    margin-top: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    font-size: var(--fs-base);
+    font-weight: 700;
+    font-family: var(--font-family);
+    transition: all var(--transition-fast);
+    margin-top: var(--sp-5);
+    box-shadow: var(--shadow-sm);
 }
 
 #cards-display button#close-cards-btn:hover {
-    background: linear-gradient(45deg, #ee5a24 0%, #c23616 100%);
+    background: #c0392b;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    box-shadow: var(--shadow-md);
 }
 
-/* Estilos responsive */
+/* Responsive */
 @media (max-width: 768px) {
     #servers-container {
-        padding: 1rem;
-        gap: 1.5rem;
+        padding: var(--sp-4);
+        gap: var(--sp-5);
     }
     
     .chest-container {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: var(--sp-4);
     }
     
     .chest-card {
         width: 100%;
-        max-width: 200px;
+        max-width: 180px;
     }
     
     .server-title {
-        font-size: 1.4rem;
+        font-size: var(--fs-md);
     }
     
     .server-icon {
         width: 36px;
         height: 36px;
-        object-fit: cover;
-        flex-shrink: 0;
-        aspect-ratio: 1 / 1;
-        display: block;
-        border-radius: 50%;
-        border: 3px solid rgba(255,255,255,0.3);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     
     #cards-container {
-        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); /* Reducido para móviles */
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: var(--sp-3);
     }
     
     .card-item {
         width: 100%;
-        max-width: 130px; /* Reducido para móviles */
-        padding: 0.5rem;
+        max-width: 120px;
+        padding: var(--sp-2);
     }
     
     .card-item img.card-image {
-        height: 130px; /* Reducido para móviles */
+        height: 130px;
     }
 }
 
-/* Cofres page: overlay needs z-index above cards-display */
+/* z-index for overlay */
 .overlay {
     z-index: 1002;
 }
 
 #no-chests-message {
-    color: red;
+    color: var(--color-danger);
     text-align: center;
-    margin-top: 4rem;
-    font-size: 30px;
+    margin-top: var(--sp-8);
+    font-size: var(--fs-xl);
 }

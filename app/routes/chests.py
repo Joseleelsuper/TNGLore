@@ -10,6 +10,7 @@ from typing import Dict, Any, List, Optional
 
 from app.utils.images import get_images
 from app.utils.cache_manager import safe_memoize, safe_delete_memoized
+from app.routes.coleccion import get_user_collectibles_data
 from app.utils.game_config import (
     get_chest_config as _yaml_chest_config,
     get_card_rarities as _yaml_card_rarities,
@@ -139,6 +140,7 @@ def open_chests():
 
     # Invalidar caché del usuario después de abrir cofre
     safe_delete_memoized(get_user_chests_data, current_user.email)
+    safe_delete_memoized(get_user_collectibles_data, current_user.email)
 
     try:
         result = _open_chest_sync(current_user.email, chest_type, server)

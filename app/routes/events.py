@@ -18,6 +18,8 @@ from app import mongo
 from app.models.user import invalidate_user_cache
 from app.utils.bot_servers import get_shared_bot_servers
 from app.utils.game_config import get_chest_images
+from app.utils.cache_manager import safe_delete_memoized
+from app.routes.coleccion import get_user_collectibles_data
 
 logger = logging.getLogger(__name__)
 
@@ -395,6 +397,13 @@ def claim_event_reward(event_id: str) -> tuple:
                 result_data["code"] = code_data["code"]
                 result_data["code_description"] = code_data.get("description", "")
                 result_data["code_link"] = code_data.get("link")
+                mongo.chest_logs.insert_one({
+                    "date": now,
+                    "username": current_user.username,
+                    "type": "code",
+                    "source": "event",
+                    "event_id": eid_str,
+                })
             else:
                 # Fallback: legendary chest
                 logger.warning(
@@ -408,6 +417,14 @@ def claim_event_reward(event_id: str) -> tuple:
                 result_data["rarity"] = "legendaria"
                 result_data["chest_id"] = chest_id
                 result_data["fallback"] = True
+                if chest_id:
+                    mongo.chest_logs.insert_one({
+                        "date": now,
+                        "chest_id": chest_id,
+                        "username": current_user.username,
+                        "type": "chest",
+                        "source": "event",
+                    })
 
         elif r_type == "chest":
             rarity = reward.get("rarity", "comun")
@@ -415,6 +432,14 @@ def claim_event_reward(event_id: str) -> tuple:
             result_data["rarity"] = rarity
             result_data["chest_id"] = chest_id
             result_data["image"] = get_chest_images().get(rarity, "")
+            if chest_id:
+                mongo.chest_logs.insert_one({
+                    "date": now,
+                    "chest_id": chest_id,
+                    "username": current_user.username,
+                    "type": "chest",
+                    "source": "event",
+                })
 
         elif r_type == "card":
             card_id = reward.get("card_id")
@@ -434,6 +459,14 @@ def claim_event_reward(event_id: str) -> tuple:
 
             if card_data:
                 result_data["card"] = card_data
+                mongo.chest_logs.insert_one({
+                    "date": now,
+                    "username": current_user.username,
+                    "type": "card",
+                    "source": "event",
+                    "card_nombre": card_data.get("nombre", ""),
+                    "card_rareza": card_data.get("rareza", ""),
+                })
             else:
                 # Fallback: chest of the specified rarity
                 fallback_rarity = rarity or "comun"
@@ -444,6 +477,14 @@ def claim_event_reward(event_id: str) -> tuple:
                 result_data["rarity"] = fallback_rarity
                 result_data["chest_id"] = chest_id
                 result_data["fallback"] = True
+                if chest_id:
+                    mongo.chest_logs.insert_one({
+                        "date": now,
+                        "chest_id": chest_id,
+                        "username": current_user.username,
+                        "type": "chest",
+                        "source": "event",
+                    })
 
         # Update progress
         is_completed = current_day >= days_count
@@ -468,6 +509,7 @@ def claim_event_reward(event_id: str) -> tuple:
             })
 
         invalidate_user_cache(str(current_user._id))
+        safe_delete_memoized(get_user_collectibles_data, current_user.email)
 
         result_data["completed"] = is_completed
         return jsonify(result_data), 200

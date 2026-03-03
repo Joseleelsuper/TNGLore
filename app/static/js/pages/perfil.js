@@ -131,10 +131,6 @@ async function loadOpeningHistory(append = false) {
             return;
         }
 
-        const rarityColors = {
-            comun: '#9e9e9e', rara: '#66bb6a', epica: '#ab47bc', legendaria: '#ffd54f'
-        };
-
         data.entries.forEach(entry => {
             const card = document.createElement('div');
             card.className = 'history-entry';
@@ -148,11 +144,9 @@ async function loadOpeningHistory(append = false) {
             cardsContainer.className = 'history-cards';
 
             (entry.cards_received || []).forEach(c => {
-                const color = rarityColors[c.rareza] || '#ccc';
+                const rarityClass = c.rareza ? c.rareza.toLowerCase() : '';
                 const chip = document.createElement('span');
-                chip.className = 'history-card-chip';
-                chip.style.borderColor = color;
-                chip.style.color = color;
+                chip.className = `history-card-chip ${rarityClass}`;
                 chip.textContent = c.nombre;
                 chip.addEventListener('click', () => {
                     abrirOverlayCarta({
@@ -172,8 +166,9 @@ async function loadOpeningHistory(append = false) {
 
             const meta = document.createElement('div');
             meta.className = 'history-meta';
+            const chestRarityClass = chestType !== '?' ? chestType.toLowerCase() : '';
             meta.innerHTML = `
-                <span class="history-type" style="color:${rarityColors[chestType] || '#ccc'}">
+                <span class="history-type ${chestRarityClass}">
                     Cofre ${chestType}
                 </span>
                 ${source ? `<span class="history-source">${source}</span>` : ''}

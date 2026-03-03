@@ -18,6 +18,22 @@
         <div id="loading-indicator" class="loading-spinner" style="display: none;">
             <p>Cargando colecciones...</p>
         </div>
+
+        <!-- Barra de filtros -->
+        <div id="filtros-colecciones" class="filtros-bar">
+            <input type="text" id="buscar-cartas" placeholder="Buscar carta..." autocomplete="off">
+            <select id="filtro-rareza">
+                <option value="">Todas las rarezas</option>
+                <option value="comun">Común</option>
+                <option value="rara">Rara</option>
+                <option value="epica">Épica</option>
+                <option value="legendaria">Legendaria</option>
+            </select>
+            <select id="filtro-coleccion">
+                <option value="">Todas las colecciones</option>
+            </select>
+            <button id="limpiar-filtros" class="btn-limpiar">Limpiar</button>
+        </div>
         
         <div id="contenedor-colecciones" class="collection-grid"></div>
         

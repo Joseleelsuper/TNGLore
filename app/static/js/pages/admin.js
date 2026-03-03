@@ -13,6 +13,14 @@ function extraerID(objeto) {
     return null;
 }
 
+// ── Module-level data stores for search/filter ─────────────────
+/** @type {Array<Object>} */
+let _allCartas = [];
+/** @type {Array<Object>} */
+let _allColecciones = [];
+/** @type {Array<Object>} */
+let _allUsuarios = [];
+
 document.addEventListener('DOMContentLoaded', initializeAdminPanel);
 
 function initializeAdminPanel() {
@@ -46,8 +54,16 @@ function setupEventListeners() {
     document.getElementById('cartas-sort').addEventListener('change', ordenarCartas);
     document.getElementById('colecciones-sort').addEventListener('change', ordenarColecciones);
     document.getElementById('usuarios-sort').addEventListener('change', ordenarUsuarios);
-    document.getElementById('codigos-filter').addEventListener('change', filtrarCodigos);
-    document.getElementById('eventos-filter').addEventListener('change', filtrarEventos);
+    document.getElementById('codigos-filter').addEventListener('change', buscarCodigos);
+    document.getElementById('eventos-filter').addEventListener('change', buscarEventos);
+
+    // Barras de búsqueda
+    document.getElementById('cartas-search')?.addEventListener('input', buscarCartas);
+    document.getElementById('admin-filtro-rareza')?.addEventListener('change', buscarCartas);
+    document.getElementById('colecciones-search')?.addEventListener('input', buscarColecciones);
+    document.getElementById('usuarios-search')?.addEventListener('input', buscarUsuarios);
+    document.getElementById('codigos-search')?.addEventListener('input', buscarCodigos);
+    document.getElementById('eventos-search')?.addEventListener('input', buscarEventos);
 
     // Days count change -> rebuild rewards
     document.getElementById('evento-days').addEventListener('change', reconstruirRewards);
@@ -150,18 +166,24 @@ function cerrarModal() {
 
 async function cargarCartas() {
     try {
-        const cartas = await fetchData('/api/admin/cartas');
-        renderizarLista('cartas-list', cartas, crearElementoCarta);
+        _allCartas = await fetchData('/api/admin/cartas');
+        renderizarCartas(_allCartas);
     } catch (error) {
         console.error('Error al cargar cartas:', error);
         document.getElementById('cartas-list').innerHTML = '<p>Error al cargar las cartas.</p>';
     }
 }
 
+function renderizarCartas(cartas) {
+    renderizarLista('cartas-list', cartas, crearElementoCarta);
+    // Aplicar truncado tras el render por lotes (estimamos 600ms de margen)
+    setTimeout(() => aplicarTruncadoAdmin(cartas.length), 600);
+}
+
 async function cargarColecciones() {
     try {
-        const colecciones = await fetchData('/api/colecciones');
-        renderizarLista('colecciones-list', colecciones, crearElementoColeccion);
+        _allColecciones = await fetchData('/api/colecciones');
+        renderizarLista('colecciones-list', _allColecciones, crearElementoColeccion);
     } catch (error) {
         console.error('Error al cargar colecciones:', error);
         document.getElementById('colecciones-list').innerHTML = '<p>Error al cargar las colecciones.</p>';
@@ -170,8 +192,8 @@ async function cargarColecciones() {
 
 async function cargarUsuarios() {
     try {
-        const usuarios = await fetchData('/api/usuarios');
-        renderizarLista('usuarios-list', usuarios, crearElementoUsuario);
+        _allUsuarios = await fetchData('/api/usuarios');
+        renderizarLista('usuarios-list', _allUsuarios, crearElementoUsuario);
     } catch (error) {
         console.error('Error al cargar usuarios:', error);
         document.getElementById('usuarios-list').innerHTML = '<p>Error al cargar los usuarios.</p>';
@@ -770,15 +792,98 @@ function crearElementoCodigo(code) {
 }
 
 function filtrarCodigos() {
-    const filter = document.getElementById('codigos-filter').value;
+    buscarCodigos();
+}
+
+// ── Búsqueda / filtrado ──────────────────────────────────────
+
+function buscarCartas() {
+    const term = (document.getElementById('cartas-search')?.value || '').toLowerCase().trim();
+    const rareza = document.getElementById('admin-filtro-rareza')?.value || '';
+    let filtered = _allCartas;
+    if (term) {
+        filtered = filtered.filter(c =>
+            c.nombre.toLowerCase().includes(term) ||
+            (c.coleccion?.nombre || '').toLowerCase().includes(term)
+        );
+    }
+    if (rareza) filtered = filtered.filter(c => c.rareza === rareza);
+    renderizarCartas(filtered);
+}
+
+function buscarColecciones() {
+    const term = (document.getElementById('colecciones-search')?.value || '').toLowerCase().trim();
+    const filtered = term ? _allColecciones.filter(c => c.nombre.toLowerCase().includes(term)) : _allColecciones;
+    renderizarLista('colecciones-list', filtered, crearElementoColeccion);
+}
+
+function buscarUsuarios() {
+    const term = (document.getElementById('usuarios-search')?.value || '').toLowerCase().trim();
+    const filtered = term ? _allUsuarios.filter(u => u.username.toLowerCase().includes(term)) : _allUsuarios;
+    renderizarLista('usuarios-list', filtered, crearElementoUsuario);
+}
+
+function buscarCodigos() {
+    const term = (document.getElementById('codigos-search')?.value || '').toLowerCase().trim();
+    const status = document.getElementById('codigos-filter')?.value || 'all';
     let filtered = _allCodigos;
-    if (filter === 'available') {
-        filtered = _allCodigos.filter(c => c.active && !c.assigned_to);
-    } else if (filter === 'assigned') {
-        filtered = _allCodigos.filter(c => !!c.assigned_to);
+    if (status === 'available') filtered = filtered.filter(c => c.active && !c.assigned_to);
+    else if (status === 'assigned') filtered = filtered.filter(c => !!c.assigned_to);
+    if (term) {
+        filtered = filtered.filter(c =>
+            c.code.toLowerCase().includes(term) ||
+            (c.description || '').toLowerCase().includes(term)
+        );
     }
     renderizarCodigos(filtered);
 }
+
+function buscarEventos() {
+    const term = (document.getElementById('eventos-search')?.value || '').toLowerCase().trim();
+    const status = document.getElementById('eventos-filter')?.value || 'all';
+    let filtered = _allEventos;
+    if (status === 'active') filtered = filtered.filter(e => e.active);
+    else if (status === 'inactive') filtered = filtered.filter(e => !e.active);
+    if (term) filtered = filtered.filter(e => (e.name || '').toLowerCase().includes(term));
+    renderizarEventos(filtered);
+}
+
+// ── Truncado de lista de cartas en admin ───────────────────
+
+let _truncadoBtn = null;
+
+function aplicarTruncadoAdmin(totalCartas) {
+    const list = document.getElementById('cartas-list');
+    if (!list) return;
+
+    // Remover botón anterior si existe
+    if (_truncadoBtn) {
+        _truncadoBtn.remove();
+        _truncadoBtn = null;
+    }
+
+    list.classList.add('lista--truncada');
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            if (list.scrollHeight <= list.offsetHeight + 4) {
+                list.classList.remove('lista--truncada');
+                return;
+            }
+            const btn = document.createElement('button');
+            btn.className = 'btn-expandir';
+            btn.textContent = `Ver todas las cartas (${totalCartas})`;
+            btn.addEventListener('click', () => {
+                const truncado = list.classList.toggle('lista--truncada');
+                btn.textContent = truncado ? `Ver todas las cartas (${totalCartas})` : 'Ver menos cartas';
+                btn.classList.toggle('expanded', !truncado);
+            });
+            list.after(btn);
+            _truncadoBtn = btn;
+        });
+    });
+}
+
 
 function editarCodigo(id) {
     const code = _allCodigos.find(c => c._id === id);
@@ -947,11 +1052,7 @@ function crearElementoEvento(ev) {
 }
 
 function filtrarEventos() {
-    const filter = document.getElementById('eventos-filter').value;
-    let filtered = _allEventos;
-    if (filter === 'active') filtered = _allEventos.filter(e => e.active);
-    else if (filter === 'inactive') filtered = _allEventos.filter(e => !e.active);
-    renderizarEventos(filtered);
+    buscarEventos();
 }
 
 async function abrirModalEvento(id = null) {

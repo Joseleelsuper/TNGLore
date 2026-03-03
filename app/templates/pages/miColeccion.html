@@ -14,22 +14,39 @@
 
     <!-- Contenido principal -->
     <main>
-        {% if coleccion|length == 0 %}
-        <!-- Controles de ordenación -->
-        <div id="sorting-controls">
+        <!-- Controles de búsqueda, filtros y ordenación -->
+        <div id="sorting-controls" class="filtros-bar">
+            <input type="text" id="buscar-cartas" placeholder="Buscar carta..." autocomplete="off">
             <label for="sort-select">Ordenar por:</label>
             <select id="sort-select">
                 <option value="nombre">Nombre</option>
                 <option value="rareza">Rareza</option>
             </select>
+            <select id="filtro-rareza">
+                <option value="">Todas las rarezas</option>
+                <option value="comun">Común</option>
+                <option value="rara">Rara</option>
+                <option value="epica">Épica</option>
+                <option value="legendaria">Legendaria</option>
+            </select>
+            <select id="filtro-servidor">
+                <option value="">Todos los servidores</option>
+            </select>
+            <select id="filtro-estado">
+                <option value="">Todas</option>
+                <option value="tengo">Tengo</option>
+                <option value="no-tengo">No tengo</option>
+            </select>
+            <button id="limpiar-filtros" class="btn-limpiar">Limpiar</button>
         </div>
+
         <!-- Contenedor para servidores y sus cartas -->
-            <div id="guilds-container"></div>
-        {% else %}
-            <div id="no-cards-message">
-                <p id="no-cards-text">No tienes cartas en tu colección todavía.</p>
-            </div>
-        {% endif %}
+        <div id="guilds-container"></div>
+
+        <!-- Mensaje cuando el usuario no tiene cartas -->
+        <div id="no-cards-message" style="display:none">
+            <p id="no-cards-text">No tienes cartas en tu colección todavía.</p>
+        </div>
     </main>
 
     <!-- Overlay -->
