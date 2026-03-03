@@ -1,95 +1,69 @@
+/* ── Colecciones page ────────────────────────────────────── */
 #contenedor-colecciones {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: var(--sp-6);
+    max-width: var(--container-max);
+    margin: var(--sp-6) auto;
+    padding: 0 var(--sp-4);
 }
 
 .seccion-coleccion {
-    background-color: #f0f0f0;
-    border-radius: 8px;
-    padding: 1rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-5);
+    box-shadow: var(--shadow-sm);
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: var(--sp-5);
+    align-items: start;
 }
 
 .contenedor-cartas {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: var(--sp-4);
 }
 
-@media (max-width: 768px) {
-    .contenedor-cartas {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-/* Estilos para las tarjetas */
-.card {
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    overflow: hidden;
-    transition: transform 0.3s ease;
-}
-
-.card:hover {
-    transform: translateY(-5px);
-}
-
-.card-image-container {
-    width: 100%;
-    padding-top: 100%; /* Aspect ratio 1:1 */
-    position: relative;
-    overflow: hidden;
-}
-
+/* Collection card overrides */
 .coleccion-card .card-image-container {
-    padding-top: 0%;
-}
-
-.card-image {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    cursor: pointer;
+    padding-top: 75%;
 }
 
 .coleccion-card .card-image {
-    object-fit: contain; /* Cambiado de 'cover' a 'contain' para asegurar que se vea toda la imagen */
+    object-fit: contain;
 }
 
-.card-content {
-    padding: 1rem;
-    cursor: pointer;
+/* "Ver más" button spans both columns */
+.seccion-coleccion > .btn-expandir {
+    grid-column: 1 / -1;
 }
 
-.card-title {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: bold;
-}
-
-.card-rarity {
-    font-weight: bold;
-    margin: 0.5rem 0 0;
-    font-size: 0.9rem;
-    color: #666;
+.no-results {
     text-align: center;
+    color: var(--color-text-muted);
+    font-style: italic;
+    padding: var(--sp-6) 0;
 }
 
-/* Colores de rareza */
-.card-rarity.comun {
-    color: gray;
+/* Truncation */
+.contenedor-cartas--truncado {
+    max-height: 580px;
+    overflow: hidden;
+    transition: max-height var(--transition-slow);
 }
-.card-rarity.rara {
-    color: green;
-}
-.card-rarity.epica {
-    color: purple;
-}
-.card-rarity.legendaria {
-    color: goldenrod;
+
+@media (max-width: 768px) {
+    .seccion-coleccion {
+        grid-template-columns: 1fr;
+    }
+
+    .coleccion-card {
+        max-width: 200px;
+    }
+
+    .contenedor-cartas {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }

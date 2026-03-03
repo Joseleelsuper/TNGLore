@@ -1,32 +1,33 @@
-/* ─── Events Container ──────────────────────────────────── */
+/* ── Events Container ──────────────────────────────────── */
 #events-container {
     max-width: 860px;
-    margin: 1rem auto 0.5rem;
+    margin: var(--sp-4) auto var(--sp-2);
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--sp-3);
 }
 
 .event-section {
-    padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    border: 1px solid #dee2e6;
-    border-radius: 12px;
-    color: #333;
+    padding: var(--sp-4) var(--sp-5);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    color: var(--color-text);
+    box-shadow: var(--shadow-sm);
 }
 
 .event-section h2 {
     text-align: center;
-    margin-bottom: 0.3rem;
+    margin-bottom: var(--sp-1);
     font-size: 1.2em;
-    color: #4d7cff;
+    color: var(--color-primary);
 }
 
 .event-description {
     text-align: center;
-    font-size: 0.85em;
-    color: #888;
-    margin: 0 0 0.5rem;
+    font-size: var(--fs-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--sp-2);
 }
 
 .dr-track {
@@ -46,22 +47,22 @@
     max-width: 100px;
     flex: 1;
     padding: 8px 4px;
-    border-radius: 10px;
-    background: #fff;
-    border: 2px solid #dee2e6;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    transition: transform 0.2s, border-color 0.2s;
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-fast), border-color var(--transition-fast);
 }
 
 .dr-day.dr-claimed {
-    border-color: #4caf50;
+    border-color: var(--color-success);
     background: #f1f8e9;
     opacity: 0.75;
 }
 
 .dr-day.dr-available {
-    border-color: #4d7cff;
-    background: #e8eeff;
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
     animation: dr-pulse 2s ease-in-out infinite;
 }
 
@@ -75,9 +76,9 @@
 }
 
 .dr-num {
-    font-size: 0.7em;
+    font-size: var(--fs-xs);
     font-weight: 600;
-    color: #888;
+    color: var(--color-text-muted);
     text-transform: uppercase;
 }
 
@@ -89,11 +90,11 @@
 .dr-label {
     font-size: 0.65em;
     text-transform: capitalize;
-    color: #999;
+    color: var(--color-text-muted);
 }
 
 .dr-check {
-    color: #4caf50;
+    color: var(--color-success);
     font-size: 1em;
     font-weight: bold;
 }
@@ -101,14 +102,15 @@
 .dr-claim-btn {
     margin-top: 2px;
     padding: 3px 10px;
-    font-size: 0.75em;
+    font-size: var(--fs-xs);
     font-weight: 600;
     border: none;
-    border-radius: 6px;
-    background: linear-gradient(135deg, #4d7cff, #6c5ce7);
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
     color: #fff;
     cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s;
+    font-family: var(--font-family);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .dr-claim-btn:hover:not(:disabled) {
@@ -123,50 +125,51 @@
 
 .dr-info {
     text-align: center;
-    margin-top: 0.5rem;
+    margin-top: var(--sp-2);
 }
 
 .dr-complete {
-    font-size: 0.95em;
-    color: #4d7cff;
+    font-size: var(--fs-base);
+    color: var(--color-primary);
     font-weight: 600;
 }
 
 .dr-code-reveal {
     margin-top: 4px;
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-size: 1em;
-    color: #6c5ce7;
+    color: var(--color-accent);
     word-break: break-all;
 }
 
 .dr-code-desc {
-    font-size: 0.85em;
-    color: #888;
+    font-size: var(--fs-sm);
+    color: var(--color-text-muted);
 }
 
 .dr-error {
     text-align: center;
-    color: #e74c3c;
-    font-size: 0.9em;
+    color: var(--color-danger);
+    font-size: var(--fs-sm);
 }
 
-/* ─── Chest Console (card-based feed) ────────────────────── */
+/* ── Chest Console (card-based feed) ────────────────────── */
 #chest-console {
     max-width: 860px;
-    margin: 0.5rem auto 2rem;
-    padding: 1.25rem;
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    border: 1px solid #dee2e6;
-    border-radius: 12px;
-    color: #333;
+    margin: var(--sp-2) auto var(--sp-6);
+    padding: var(--sp-5);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    color: var(--color-text);
+    box-shadow: var(--shadow-sm);
 }
 
 #chest-console h2 {
     text-align: center;
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--sp-3);
     font-size: 1.2em;
-    color: #4d7cff;
+    color: var(--color-primary);
 }
 
 #chest-log-container {
@@ -178,20 +181,11 @@
     padding-right: 4px;
 }
 
-#chest-log-container::-webkit-scrollbar {
-    width: 5px;
-}
-
-#chest-log-container::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 3px;
-}
-
 .no-logs {
     text-align: center;
-    color: #888;
-    font-size: 0.9em;
-    padding: 2rem 0;
+    color: var(--color-text-muted);
+    font-size: var(--fs-sm);
+    padding: var(--sp-6) 0;
 }
 
 /* Log card (single row) */
@@ -200,14 +194,14 @@
     align-items: center;
     gap: 10px;
     padding: 8px 12px;
-    background: #fff;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    transition: background 0.15s, box-shadow 0.15s;
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .log-card:hover {
-    background: #f0f4ff;
+    background: var(--color-primary-light);
     box-shadow: 0 1px 4px rgba(77, 124, 255, 0.08);
 }
 
@@ -217,8 +211,8 @@
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
-    background: #e9ecef;
-    border: 2px solid #dee2e6;
+    background: var(--color-border-light);
+    border: 2px solid var(--color-border);
 }
 
 .log-body {
@@ -229,37 +223,37 @@
 
 .log-username {
     font-weight: 700;
-    color: #333;
+    color: var(--color-text);
 }
 
 .log-text {
-    color: #888;
+    color: var(--color-text-muted);
     margin: 0 3px;
 }
 
 .log-date {
-    font-size: 0.75em;
-    color: #aaa;
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
     white-space: nowrap;
     flex-shrink: 0;
 }
 
-/* Rareza colors */
+/* Rarity colors */
 .log-rareza {
     font-weight: 700;
     text-transform: capitalize;
 }
 
-.log-rareza.comun { color: gray; }
-.log-rareza.rara { color: green; }
-.log-rareza.epica { color: purple; }
-.log-rareza.legendaria { color: goldenrod; }
+.log-rareza.comun       { color: var(--color-rarity-comun); }
+.log-rareza.rara        { color: var(--color-rarity-rara); }
+.log-rareza.epica       { color: var(--color-rarity-epica); }
+.log-rareza.legendaria  { color: var(--color-rarity-legendaria); }
 
-/* ─── Custom popup (reward / server selection) ───────────── */
+/* ── Custom popup (reward / server selection) ─────────── */
 .reward-popup-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.45);
+    background: rgba(0, 0, 0, 0.4);
     z-index: 1000;
     display: flex;
     align-items: center;
@@ -273,12 +267,12 @@
 }
 
 .reward-popup {
-    background: #fff;
-    border-radius: 14px;
-    padding: 1.5rem 2rem;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-5) var(--sp-6);
     max-width: 420px;
     width: 90%;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+    box-shadow: var(--shadow-lg);
     text-align: center;
     animation: rpPopIn 0.25s ease;
 }
@@ -289,88 +283,90 @@
 }
 
 .reward-popup h3 {
-    margin: 0 0 0.5rem;
-    font-size: 1.15em;
-    color: #333;
+    margin: 0 0 var(--sp-2);
+    font-size: var(--fs-md);
+    color: var(--color-text);
 }
 
 .reward-popup .popup-emoji {
     font-size: 2.5em;
-    margin-bottom: 0.3rem;
+    margin-bottom: var(--sp-1);
 }
 
 .reward-popup .popup-msg {
-    font-size: 0.95em;
-    color: #555;
-    margin-bottom: 0.8rem;
+    font-size: var(--fs-base);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--sp-3);
 }
 
 .reward-popup .popup-code {
-    font-family: monospace;
-    font-size: 1.1em;
-    color: #6c5ce7;
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
+    color: var(--color-accent);
     background: #f0f0ff;
     padding: 6px 14px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     display: inline-block;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--sp-2);
     word-break: break-all;
 }
 
 .reward-popup .popup-code-link {
     display: block;
     margin-top: 4px;
-    font-size: 0.85em;
-    color: #4d7cff;
+    font-size: var(--fs-sm);
+    color: var(--color-primary);
 }
 
 .reward-popup .server-select-label {
     display: block;
-    font-size: 0.85em;
-    color: #888;
+    font-size: var(--fs-sm);
+    color: var(--color-text-muted);
     margin-bottom: 6px;
 }
 
 .reward-popup select {
     width: 100%;
     padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 0.9em;
-    margin-bottom: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-sm);
+    font-family: var(--font-family);
+    margin-bottom: var(--sp-3);
 }
 
 .reward-popup .popup-actions {
     display: flex;
     justify-content: center;
     gap: 8px;
-    margin-top: 0.5rem;
+    margin-top: var(--sp-2);
 }
 
 .reward-popup .popup-btn {
     padding: 8px 24px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     font-weight: 600;
     cursor: pointer;
-    font-size: 0.9em;
-    transition: opacity 0.15s;
+    font-size: var(--fs-sm);
+    font-family: var(--font-family);
+    transition: opacity var(--transition-fast);
 }
 
 .reward-popup .popup-btn:hover { opacity: 0.85; }
 
 .reward-popup .popup-btn-primary {
-    background: linear-gradient(135deg, #4d7cff, #6c5ce7);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
     color: #fff;
 }
 
 .reward-popup .popup-btn-secondary {
-    background: #e9ecef;
-    color: #555;
+    background: var(--color-border-light);
+    color: var(--color-text-secondary);
 }
 
 /* Responsive */
-@media (max-width: 600px) {
+@media (max-width: 480px) {
     .dr-track {
         gap: 4px;
     }

@@ -1,35 +1,34 @@
-/* Estilos para optimización de rendimiento y carga */
-/* app/static/css/components/performance.css */
+/* ── Performance & loading ────────────────────────────────── */
 
-/* Spinners de carga */
+/* Spinners */
 .loading-spinner {
     display: inline-block;
     width: 40px;
     height: 40px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #3498db;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    border-top: 3px solid var(--color-primary);
     border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 20px auto;
+    animation: perf-spin 1s linear infinite;
+    margin: var(--sp-5) auto;
 }
 
 .loading-spinner-small {
     display: inline-block;
     width: 20px;
     height: 20px;
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #3498db;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top: 2px solid var(--color-primary);
     border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 10px auto;
+    animation: perf-spin 1s linear infinite;
+    margin: var(--sp-2) auto;
 }
 
-@keyframes spin {
+@keyframes perf-spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
-/* Optimizaciones para imágenes */
+/* Lazy image fade-in */
 img[loading="lazy"]:not(.loaded) {
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
@@ -41,29 +40,16 @@ img[loading="lazy"][src] {
     opacity: 1;
 }
 
-/* Placeholder para imágenes que cargan */
-.card-image-container {
-    position: relative;
-    overflow: hidden;
-    background-color: #f8f9fa;
-    min-height: 150px;
-}
-
+/* Card image placeholder */
 .card-image {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    transition: transform var(--transition-fast), opacity 0.3s ease;
 }
 
 .card-image:hover {
     transform: scale(1.05);
 }
 
-/* Estados de carga para cards */
+/* Card loading state */
 .card.loading {
     opacity: 0.7;
     pointer-events: none;
@@ -77,20 +63,20 @@ img[loading="lazy"][src] {
     width: 20px;
     height: 20px;
     margin: -10px 0 0 -10px;
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #3498db;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top: 2px solid var(--color-primary);
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    animation: perf-spin 1s linear infinite;
 }
 
-/* Indicador de caché en desarrollo */
+/* Dev cache indicator */
 .cache-indicator {
     position: fixed;
     bottom: 10px;
     right: 10px;
-    background-color: rgba(0,0,0,0.8);
-    color: white;
-    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: var(--sp-1) var(--sp-3);
     border-radius: 15px;
     font-size: 11px;
     z-index: 1001;
@@ -103,11 +89,11 @@ img[loading="lazy"][src] {
 }
 
 .cache-indicator.hit {
-    background-color: rgba(46, 204, 113, 0.9);
+    background: rgba(46, 204, 113, 0.9);
 }
 
 .cache-indicator.miss {
-    background-color: rgba(231, 76, 60, 0.9);
+    background: rgba(231, 76, 60, 0.9);
 }
 
 @keyframes fadeInOut {
@@ -115,14 +101,14 @@ img[loading="lazy"][src] {
     50% { opacity: 1; }
 }
 
-/* Skeleton loading para cards */
+/* Skeleton loading */
 .card-skeleton {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--color-bg) 25%, var(--color-border) 50%, var(--color-bg) 75%);
     background-size: 200% 100%;
-    animation: loading 1.5s infinite;
+    animation: skeleton-loading 1.5s infinite;
 }
 
-@keyframes loading {
+@keyframes skeleton-loading {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
@@ -136,8 +122,8 @@ img[loading="lazy"][src] {
 .card-skeleton .card-rarity {
     height: 16px;
     background: inherit;
-    margin: 8px 0;
-    border-radius: 4px;
+    margin: var(--sp-2) 0;
+    border-radius: var(--radius-sm);
 }
 
 .card-skeleton .card-title {
@@ -148,43 +134,40 @@ img[loading="lazy"][src] {
     width: 60%;
 }
 
-/* Mejoras de accesibilidad */
-.overlay-card:focus {
-    outline: 2px solid #3498db;
-    outline-offset: 2px;
-}
-
+/* Accessibility focus */
+.overlay-card:focus,
 .card:focus {
-    outline: 2px solid #3498db;
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
 }
 
-/* Indicadores de estado de conexión */
+/* Connection status */
 .connection-status {
     position: fixed;
     top: 10px;
     right: 10px;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 12px;
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-xs);
+    font-family: var(--font-family);
     z-index: 1002;
     display: none;
 }
 
 .connection-status.offline {
-    background-color: #e74c3c;
-    color: white;
+    background: var(--color-danger);
+    color: #fff;
     display: block;
 }
 
 .connection-status.online {
-    background-color: #27ae60;
-    color: white;
+    background: var(--color-success);
+    color: #fff;
     display: block;
-    animation: fadeOut 3s ease-in-out forwards;
+    animation: connFadeOut 3s ease-in-out forwards;
 }
 
-@keyframes fadeOut {
+@keyframes connFadeOut {
     0%, 80% { opacity: 1; }
-    100% { opacity: 0; display: none; }
+    100% { opacity: 0; }
 }

@@ -23,6 +23,14 @@
         <section id="cartas-section" class="admin-section">
             <h2>Gestión de Cartas</h2>
             <div class="section-header">
+                <input type="text" id="cartas-search" class="admin-search-input" placeholder="Buscar carta o colección..." autocomplete="off">
+                <select id="admin-filtro-rareza" class="sort-dropdown">
+                    <option value="">Todas las rarezas</option>
+                    <option value="comun">Común</option>
+                    <option value="rara">Rara</option>
+                    <option value="epica">Épica</option>
+                    <option value="legendaria">Legendaria</option>
+                </select>
                 <select id="cartas-sort" class="sort-dropdown">
                     <option value="" selected disabled>Ordenar por...</option>
                     <option value="nombre">Ordenar por Nombre</option>
@@ -37,6 +45,7 @@
         <section id="colecciones-section" class="admin-section">
             <h2>Gestión de Colecciones</h2>
             <div class="section-header">
+                <input type="text" id="colecciones-search" class="admin-search-input" placeholder="Buscar colección..." autocomplete="off">
                 <select id="colecciones-sort" class="sort-dropdown">
                     <option value="" selected disabled>Ordenar por...</option>
                     <option value="nombre">Ordenar por Nombre</option>
@@ -49,6 +58,7 @@
         <section id="usuarios-section" class="admin-section">
             <h2>Gestión de Usuarios</h2>
             <div class="section-header">
+                <input type="text" id="usuarios-search" class="admin-search-input" placeholder="Buscar usuario..." autocomplete="off">
                 <select id="usuarios-sort" class="sort-dropdown">
                     <option value="" selected disabled>Ordenar por...</option>
                     <option value="nombre">Ordenar por Nombre de Usuario</option>
@@ -62,6 +72,7 @@
         <section id="codigos-section" class="admin-section">
             <h2>Gestión de Códigos</h2>
             <div class="section-header">
+                <input type="text" id="codigos-search" class="admin-search-input" placeholder="Buscar código o descripción..." autocomplete="off">
                 <select id="codigos-filter" class="sort-dropdown">
                     <option value="all">Todos</option>
                     <option value="available">Disponibles</option>
@@ -75,6 +86,7 @@
         <section id="eventos-section" class="admin-section">
             <h2>Gestión de Eventos</h2>
             <div class="section-header">
+                <input type="text" id="eventos-search" class="admin-search-input" placeholder="Buscar evento..." autocomplete="off">
                 <select id="eventos-filter" class="sort-dropdown">
                     <option value="all">Todos</option>
                     <option value="active">Activos</option>

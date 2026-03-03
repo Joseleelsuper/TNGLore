@@ -284,24 +284,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const infoDiv = document.createElement('div');
             infoDiv.className = 'card-info';
             
-            // Mostrar rareza con color correspondiente
-            const rarityColors = {
-                'común': '#b0b0b0',
-                'comun': '#b0b0b0',
-                'raro': '#007bff',
-                'rara': '#007bff',
-                'épico': '#6f42c1',
-                'epico': '#6f42c1',
-                'legendario': '#fd7e14',
-                'legendaria': '#fd7e14'
-            };
-            
-            const rareza = card.rareza ? card.rareza.toLowerCase() : 'común';
-            const rarityColor = rarityColors[rareza] || '#b0b0b0';
+            // Mostrar rareza con clase CSS
+            const rareza = card.rareza ? card.rareza.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') : 'comun';
             
             infoDiv.innerHTML = `
                 <p class="card-name">${card.nombre || card.name || 'Carta sin nombre'}</p>
-                <p class="card-rarity" style="color: ${rarityColor};">${card.rareza || card.rarity || 'Común'}</p>
+                <p class="card-rarity ${rareza}">${card.rareza || card.rarity || 'Común'}</p>
             `;
             div.appendChild(infoDiv);
             

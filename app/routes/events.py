@@ -18,6 +18,8 @@ from app import mongo
 from app.models.user import invalidate_user_cache
 from app.utils.bot_servers import get_shared_bot_servers
 from app.utils.game_config import get_chest_images
+from app.utils.cache_manager import safe_delete_memoized
+from app.routes.coleccion import get_user_collectibles_data
 
 logger = logging.getLogger(__name__)
 
@@ -395,6 +397,13 @@ def claim_event_reward(event_id: str) -> tuple:
                 result_data["code"] = code_data["code"]
                 result_data["code_description"] = code_data.get("description", "")
                 result_data["code_link"] = code_data.get("link")
+                mongo.chest_logs.insert_one({
+                    "date": now,
+                    "username": current_user.username,
+                    "type": "code",
+                    "source": "event",
+                    "event_id": eid_str,
+                })
             else:
                 # Fallback: legendary chest
                 logger.warning(
@@ -500,6 +509,7 @@ def claim_event_reward(event_id: str) -> tuple:
             })
 
         invalidate_user_cache(str(current_user._id))
+        safe_delete_memoized(get_user_collectibles_data, current_user.email)
 
         result_data["completed"] = is_completed
         return jsonify(result_data), 200
