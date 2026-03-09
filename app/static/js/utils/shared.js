@@ -293,6 +293,7 @@ async function abrirOverlayCarta(carta) {
 
         // Si tenemos ID de colección, obtener el nombre de la colección
         let nombreColeccion = 'No asignada';
+        let imagenColeccion = null;
         let coleccionId = extraerID(cartaCompleta.coleccion);
         
         // Verificar si el coleccionId es válido
@@ -304,12 +305,14 @@ async function abrirOverlayCarta(carta) {
             // Si ya tenemos el nombre de la colección en el objeto, usarlo
             if (cartaCompleta.coleccion && typeof cartaCompleta.coleccion === 'object' && cartaCompleta.coleccion.nombre) {
                 nombreColeccion = cartaCompleta.coleccion.nombre;
+                imagenColeccion = cartaCompleta.coleccion.image || null;
             } else if (coleccionId && typeof coleccionId === 'string') {
                 try {
                     const response = await fetch(`/api/colecciones/${encodeURIComponent(coleccionId)}`);
                     if (response.ok) {
                         const coleccionInfo = await response.json();
                         nombreColeccion = coleccionInfo.nombre;
+                        imagenColeccion = coleccionInfo.image || null;
                     }
                 } catch (error) {
                     // silently ignore
@@ -318,16 +321,30 @@ async function abrirOverlayCarta(carta) {
         } else {
         }
 
+        // Determinar la imagen del reverso: usar campo reverso, o imagen de colección como fallback
+        const imagenReverso = cartaCompleta.reverso || imagenColeccion || '/static/assets/images/placeholder-card.svg';
+
         overlayContent.innerHTML = `
             <span class="close-btn">&times;</span>
             <div class="overlay-main">
                 <div class="overlay-image-container">
-                    <a href="${cartaCompleta.image || '/static/assets/images/placeholder-card.svg'}" target="_blank">
-                        <img src="${cartaCompleta.image || '/static/assets/images/placeholder-card.svg'}" 
-                             alt="${cartaCompleta.nombre}" 
-                             loading="eager"
-                             class="loaded">
-                    </a>
+                    <div class="card-flip-container" id="overlay-card-flip">
+                        <div class="card-flip-inner">
+                            <div class="card-flip-front">
+                                <img src="${cartaCompleta.image || '/static/assets/images/placeholder-card.svg'}" 
+                                     alt="${cartaCompleta.nombre}" 
+                                     loading="eager"
+                                     class="loaded">
+                            </div>
+                            <div class="card-flip-back">
+                                <img src="${imagenReverso}" 
+                                     alt="${cartaCompleta.nombre} (reverso)" 
+                                     loading="eager"
+                                     class="loaded">
+                            </div>
+                        </div>
+                        <p class="card-flip-hint">Haz clic para ver el reverso</p>
+                    </div>
                 </div>
                 <div class="overlay-details">
                     <h2>${cartaCompleta.nombre}</h2>
@@ -346,6 +363,20 @@ async function abrirOverlayCarta(carta) {
         `;
 
         document.querySelector('.close-btn').onclick = cerrarOverlay;
+
+        // Configurar el flip de la carta al hacer clic
+        const flipContainer = document.getElementById('overlay-card-flip');
+        if (flipContainer) {
+            flipContainer.addEventListener('click', function() {
+                this.classList.toggle('flipped');
+                const hint = this.querySelector('.card-flip-hint');
+                if (hint) {
+                    hint.textContent = this.classList.contains('flipped')
+                        ? 'Haz clic para ver el anverso'
+                        : 'Haz clic para ver el reverso';
+                }
+            });
+        }
 
         // Cargar cartas relacionadas de forma asíncrona
         if (coleccionId && typeof coleccionId === 'string') {
