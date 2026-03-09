@@ -260,6 +260,7 @@ def crear_carta():
             "rareza": request.form.get("rareza"),
             "coleccion": ObjectId(coleccion_id),
             "image": None,  # Se actualizará después de subir la imagen
+            "reverso": None,  # Se actualizará después de subir la imagen del reverso
         }
 
         # Validación de datos
@@ -520,7 +521,7 @@ def upload_image():
     tipo = request.form.get("tipo")
     id = request.form.get("id")
 
-    if tipo not in ["coleccion", "carta"]:
+    if tipo not in ["coleccion", "carta", "carta_reverso"]:
         return jsonify({"error": "Tipo inválido"}), 400
 
     try:
@@ -534,7 +535,7 @@ def upload_image():
                 else "png"
             )
             path = f"app/static/assets/collections/{coleccion['nombre']}/image/{id}.{extension}"
-        else:
+        elif tipo == "carta":
             carta = mongo.collectables.find_one({"_id": ObjectId(id)})
             if not carta:
                 return jsonify({"error": "Carta no encontrada"}), 404
@@ -547,6 +548,19 @@ def upload_image():
                 else "png"
             )
             path = f"app/static/assets/collections/{coleccion['nombre']}/cards/{id}.{extension}"
+        else:  # carta_reverso
+            carta = mongo.collectables.find_one({"_id": ObjectId(id)})
+            if not carta:
+                return jsonify({"error": "Carta no encontrada"}), 404
+            coleccion = mongo.collections.find_one({"_id": carta["coleccion"]})
+            if not coleccion:
+                return jsonify({"error": "Colección no encontrada para la carta"}), 404
+            extension = (
+                image.filename.split(".")[-1]
+                if image.filename and "." in image.filename
+                else "png"
+            )
+            path = f"app/static/assets/collections/{coleccion['nombre']}/cards/{id}_reverso.{extension}"
 
         # Eliminar la imagen anterior si existe
         delete_from_github(path)
@@ -562,6 +576,12 @@ def upload_image():
             )
             # Invalidar caché después de actualizar imagen de colección
             invalidate_collections_cache()
+        elif tipo == "carta_reverso":
+            mongo.collectables.update_one(
+                {"_id": ObjectId(id)}, {"$set": {"reverso": image_url}}
+            )
+            # Invalidar caché después de actualizar imagen de reverso
+            invalidate_cards_cache()
         else:
             mongo.collectables.update_one(
                 {"_id": ObjectId(id)}, {"$set": {"image": image_url}}

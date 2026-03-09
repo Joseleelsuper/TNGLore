@@ -374,10 +374,16 @@ async function manejarSubmitCarta(event) {
     const imageFile = formData.get('imagen');
     const hasNewImage = imageFile && imageFile.size > 0;
 
+    // Verificar si se ha seleccionado una nueva imagen de reverso
+    const reversoFile = formData.get('imagen_reverso');
+    const hasNewReverso = reversoFile && reversoFile.size > 0;
+
     // Si no hay nueva imagen, eliminar el campo 'imagen' del FormData
     if (!hasNewImage) {
         formData.delete('imagen');
     }
+    // Eliminar siempre imagen_reverso del formData del POST/PUT (se sube aparte)
+    formData.delete('imagen_reverso');
 
     try {
         const response = await fetch(url, {
@@ -395,6 +401,11 @@ async function manejarSubmitCarta(event) {
             const cartaIdFinal = responseData.id || cartaId;
             if (hasNewImage) {
                 await subirImagen(formData, 'carta', cartaIdFinal);
+            }
+            if (hasNewReverso) {
+                const reversoFormData = new FormData();
+                reversoFormData.set('imagen', reversoFile);
+                await subirImagen(reversoFormData, 'carta_reverso', cartaIdFinal);
             }
             cerrarModal();
             await cargarCartas();
@@ -550,13 +561,24 @@ async function abrirOverlayCarta(carta) {
 
     const coleccionNombre = carta.coleccion?.nombre || 'No asignada';
 
+    // Determinar imagen del reverso: campo reverso o imagen de colección como fallback
+    const imagenReverso = carta.reverso || carta.coleccion?.image || '/static/assets/images/placeholder-card.svg';
+
     overlayContent.innerHTML = `
         <span class="close-btn">&times;</span>
         <div class="overlay-main">
             <div class="overlay-image-container">
-                <a href="${carta.image || '/static/assets/images/placeholder-card.svg'}" target="_blank">
-                    <img src="${carta.image || '/static/assets/images/placeholder-card.svg'}" alt="${carta.nombre}" style="max-height: 400px; width: auto;">
-                </a>
+                <div class="card-flip-container" id="overlay-card-flip">
+                    <div class="card-flip-inner">
+                        <div class="card-flip-front">
+                            <img src="${carta.image || '/static/assets/images/placeholder-card.svg'}" alt="${carta.nombre}" style="max-height: 400px; width: auto;">
+                        </div>
+                        <div class="card-flip-back">
+                            <img src="${imagenReverso}" alt="${carta.nombre} (reverso)" style="max-height: 400px; width: auto;">
+                        </div>
+                    </div>
+                    <p class="card-flip-hint">Haz clic para ver el reverso</p>
+                </div>
             </div>
             <div class="overlay-details">
                 <h2>${carta.nombre}</h2>
@@ -574,6 +596,20 @@ async function abrirOverlayCarta(carta) {
 
     overlay.style.display = 'block';
     document.querySelector('.close-btn').onclick = cerrarOverlay;
+
+    // Configurar el flip de la carta al hacer clic
+    const flipContainer = document.getElementById('overlay-card-flip');
+    if (flipContainer) {
+        flipContainer.addEventListener('click', function() {
+            this.classList.toggle('flipped');
+            const hint = this.querySelector('.card-flip-hint');
+            if (hint) {
+                hint.textContent = this.classList.contains('flipped')
+                    ? 'Haz clic para ver el anverso'
+                    : 'Haz clic para ver el reverso';
+            }
+        });
+    }
 
     // Cargar cartas relacionadas de la misma colección
     const coleccionId = carta.coleccion?._id || carta.coleccion?.id;
