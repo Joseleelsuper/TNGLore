@@ -241,6 +241,11 @@ input:focus, textarea:focus, select:focus {
     color: #e65100;
 }
 
+.status-partial {
+    background: rgba(33, 150, 243, 0.1);
+    color: #1976d2;
+}
+
 .status-inactive {
     background: var(--color-bg);
     color: var(--color-text-muted);

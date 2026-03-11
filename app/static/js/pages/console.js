@@ -26,15 +26,22 @@ function renderChestLogs(logs) {
         card.className = 'log-card';
         const avatar = log.pfp || DEFAULT_AVATAR;
         const isCardLog = log.type === 'card';
-        const rarityClass = isCardLog
-            ? (log.card?.rareza || '').toLowerCase()
-            : (log.chest?.rareza || '').toLowerCase();
-        const rarityLabel = isCardLog
-            ? (log.card?.rareza || '?')
-            : (log.chest?.rareza || '?');
-        const actionText = isCardLog
-            ? `ha conseguido la carta <em>${log.card?.nombre || 'desconocida'}</em>`
-            : 'ha conseguido un cofre';
+        const isCodeLog = log.type === 'code' || log.code_reward;
+        const rarityClass = isCodeLog
+            ? 'code'
+            : isCardLog
+                ? (log.card?.rareza || '').toLowerCase()
+                : (log.chest?.rareza || '').toLowerCase();
+        const rarityLabel = isCodeLog
+            ? 'código'
+            : isCardLog
+                ? (log.card?.rareza || '?')
+                : (log.chest?.rareza || '?');
+        const actionText = isCodeLog
+            ? 'ha recibido un código'
+            : isCardLog
+                ? `ha conseguido la carta <em>${log.card?.nombre || 'desconocida'}</em>`
+                : 'ha conseguido un cofre';
         card.innerHTML = `
             <img class="log-avatar" src="${avatar}" alt="" loading="lazy"
                  onerror="this.src='${DEFAULT_AVATAR}'">
@@ -94,12 +101,15 @@ async function loadActiveEvents() {
 function renderEvents(events, container) {
     container.innerHTML = '';
 
-    if (events.length === 0) {
+    // Ocultar eventos completados
+    const visibleEvents = events.filter(ev => !ev.completed);
+
+    if (visibleEvents.length === 0) {
         container.innerHTML = '<section class="event-section"><p class="dr-error" style="color:#999">No hay eventos activos.</p></section>';
         return;
     }
 
-    events.forEach(ev => {
+    visibleEvents.forEach(ev => {
         const section = document.createElement('section');
         section.className = 'event-section';
 
@@ -301,10 +311,13 @@ async function claimEventReward(btn, eventId, reward) {
                 onClose: () => loadActiveEvents(),
             });
         } else {
+            const denyMsg = data.denied
+                ? '\nNo puedes recibir códigos. Se te ha otorgado un cofre legendario.'
+                : data.fallback ? '\n(No había códigos disponibles)' : '';
             showRewardPopup({
                 title: `Día ${data.day}`,
                 emoji: RARITY_EMOJIS[data.rarity] || '📦',
-                message: `¡Has recibido un cofre ${data.rarity}!${data.fallback ? '\n(No había códigos disponibles)' : ''}`,
+                message: `¡Has recibido un cofre ${data.rarity}!${denyMsg}`,
                 onClose: () => loadActiveEvents(),
             });
         }

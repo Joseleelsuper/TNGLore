@@ -21,6 +21,7 @@
     --color-rarity-rara: #2e7d32;
     --color-rarity-epica: #7b1fa2;
     --color-rarity-legendaria: #e67e22;
+    --color-rarity-code: #00bcd4;
 
     /* Semantic */
     --color-success: #4caf50;
@@ -125,6 +126,7 @@ img {
 .card-rarity.rara,       .rara       { color: var(--color-rarity-rara); }
 .card-rarity.epica,      .epica      { color: var(--color-rarity-epica); }
 .card-rarity.legendaria, .legendaria { color: var(--color-rarity-legendaria); }
+.card-rarity.code,        .code        { color: var(--color-rarity-code); }
 
 /* ── Shared utility classes ──────────────────────────────── */
 .container {

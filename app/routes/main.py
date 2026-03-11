@@ -80,6 +80,8 @@ def cofres_log() -> tuple:
                     "nombre": log.get("card_nombre", ""),
                     "rareza": log.get("card_rareza", ""),
                 }
+            elif log_type == "code":
+                log["code_reward"] = True
             else:
                 chest_rarity = chests_map.get(log.get("chest_id"), "Desconocida")
                 log["chest"] = {"rareza": chest_rarity}

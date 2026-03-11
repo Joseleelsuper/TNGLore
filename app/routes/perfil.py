@@ -89,6 +89,26 @@ def api_bot_servers():
     top_servers.sort(key=lambda s: s["coleccionables_count"], reverse=True)
     return jsonify(top_servers)
 
+
+@perfil_bp.route('/api/user/codes')
+@login_required
+def api_user_codes():
+    """Devuelve los códigos asignados al usuario actual."""
+    try:
+        email = current_user.email
+        codes = list(mongo.codes.find(
+            {"assigned_users.email": email},
+            {"_id": 0, "code": 1, "description": 1, "link": 1, "expires_at": 1},
+        ))
+        for c in codes:
+            if c.get("expires_at") and not isinstance(c["expires_at"], str):
+                c["expires_at"] = c["expires_at"].isoformat()
+        return jsonify(codes), 200
+    except Exception as e:
+        logger.error(f"Error fetching user codes: {e}", exc_info=True)
+        return jsonify({"error": "Error interno"}), 500
+
+
 @perfil_bp.route('/perfil/delete-account', methods=['POST'])
 @login_required
 def delete_account():

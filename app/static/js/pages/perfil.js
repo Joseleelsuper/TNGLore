@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cargar servidores del bot via AJAX (no bloquea el render de la página)
     loadBotServers();
 
+    // Cargar códigos del usuario
+    loadUserCodes();
+
     // Cargar historial de cofres
     loadOpeningHistory();
 
@@ -99,6 +102,68 @@ async function loadBotServers() {
         `).join('');
     } catch (error) {
         serverList.innerHTML = '<p class="no-servers">Error al cargar servidores</p>';
+    }
+}
+
+
+// ─── Códigos del usuario ──────────────────────────────────
+
+async function loadUserCodes() {
+    const list = document.getElementById('codes-list');
+    if (!list) return;
+
+    try {
+        const res = await fetch('/api/user/codes');
+        if (!res.ok) throw new Error('Error');
+        const codes = await res.json();
+
+        if (codes.length === 0) {
+            list.innerHTML = '<p class="codes-empty">No tienes códigos asignados.</p>';
+            return;
+        }
+
+        list.innerHTML = '';
+        for (const c of codes) {
+            const entry = document.createElement('div');
+            entry.className = 'code-entry';
+
+            const value = document.createElement('div');
+            value.className = 'code-value';
+            value.textContent = c.code;
+            entry.appendChild(value);
+
+            if (c.description) {
+                const desc = document.createElement('p');
+                desc.className = 'code-desc';
+                desc.textContent = c.description;
+                entry.appendChild(desc);
+            }
+
+            if (c.link) {
+                let safeHref = null;
+                try {
+                    const url = new URL(c.link);
+                    if (url.protocol === 'https:' || url.protocol === 'http:') {
+                        safeHref = url.href;
+                    }
+                } catch (_) { /* invalid URL — skip */ }
+
+                if (safeHref) {
+                    const a = document.createElement('a');
+                    a.className = 'code-link';
+                    a.href = safeHref;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    a.textContent = '🔗 Canjear aquí';
+                    entry.appendChild(a);
+                }
+            }
+
+            list.appendChild(entry);
+        }
+    } catch (e) {
+        console.error(e);
+        list.innerHTML = '<p class="codes-empty">Error al cargar códigos.</p>';
     }
 }
 

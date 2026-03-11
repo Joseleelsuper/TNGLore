@@ -316,6 +316,63 @@
     }
 }
 
+/* ── User Codes ───────────────────────────────────────────── */
+.user-codes {
+    grid-column: 1 / -1;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-5);
+    color: var(--color-text);
+    box-shadow: var(--shadow-sm);
+}
+
+.user-codes h2 {
+    margin-bottom: var(--sp-4);
+    font-size: var(--fs-lg);
+    color: var(--color-text);
+}
+
+.codes-loading, .codes-empty {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: var(--sp-4) 0;
+}
+
+.code-entry {
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-sm);
+}
+
+.code-value {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: var(--fs-md);
+    color: var(--color-primary);
+    margin-bottom: var(--sp-1);
+    word-break: break-all;
+}
+
+.code-desc {
+    font-size: var(--fs-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--sp-1);
+}
+
+.code-link {
+    font-size: var(--fs-sm);
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.code-link:hover {
+    text-decoration: underline;
+}
+
 /* ── Opening History ──────────────────────────────────────── */
 .opening-history {
     grid-column: 1 / -1;

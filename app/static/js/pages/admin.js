@@ -803,12 +803,39 @@ function renderizarCodigos(codigos) {
     container.appendChild(fragment);
 }
 
+/** Normaliza max_uses: null/undefined → 1, 0 = ilimitado, N = N usos. */
+function normMaxUses(code) {
+    const v = code.max_uses;
+    return (v === null || v === undefined) ? 1 : v;
+}
+
 function crearElementoCodigo(code) {
     const div = document.createElement('div');
     div.className = 'card codigo-card';
-    const isAssigned = !!code.assigned_to;
-    const statusClass = isAssigned ? 'status-assigned' : (code.active ? 'status-available' : 'status-inactive');
-    const statusText = isAssigned ? `Asignado a ${code.assigned_to}` : (code.active ? 'Disponible' : 'Inactivo');
+    const currentUses = code.current_uses || 0;
+    const maxUses = normMaxUses(code);
+    const isUnlimited = maxUses === 0;
+    const hasCapacity = isUnlimited || currentUses < maxUses;
+
+    let statusClass, statusText;
+    if (!code.active) {
+        statusClass = 'status-inactive';
+        statusText = 'Inactivo';
+    } else if (isUnlimited) {
+        statusClass = 'status-available';
+        statusText = `Usos: ${currentUses}/∞`;
+    } else if (currentUses === 0) {
+        statusClass = 'status-available';
+        statusText = maxUses === 1 ? 'Disponible' : `Usos: 0/${maxUses}`;
+    } else if (hasCapacity) {
+        statusClass = 'status-partial';
+        statusText = `Usos: ${currentUses}/${maxUses}`;
+    } else {
+        statusClass = 'status-assigned';
+        statusText = maxUses === 1 && code.assigned_to
+            ? `Asignado a ${code.assigned_to}`
+            : `Usos: ${currentUses}/${maxUses} (completo)`;
+    }
     const expiresText = code.expires_at ? `Expira: ${new Date(code.expires_at).toLocaleDateString('es')}` : '';
 
     div.innerHTML = `
@@ -863,8 +890,15 @@ function buscarCodigos() {
     const term = (document.getElementById('codigos-search')?.value || '').toLowerCase().trim();
     const status = document.getElementById('codigos-filter')?.value || 'all';
     let filtered = _allCodigos;
-    if (status === 'available') filtered = filtered.filter(c => c.active && !c.assigned_to);
-    else if (status === 'assigned') filtered = filtered.filter(c => !!c.assigned_to);
+    if (status === 'available') {
+        filtered = filtered.filter(c => {
+            if (!c.active) return false;
+            const max = normMaxUses(c);
+            return max === 0 || (c.current_uses || 0) < max;
+        });
+    } else if (status === 'assigned') {
+        filtered = filtered.filter(c => (c.current_uses || 0) > 0);
+    }
     if (term) {
         filtered = filtered.filter(c =>
             c.code.toLowerCase().includes(term) ||
@@ -932,6 +966,7 @@ function editarCodigo(id) {
     document.getElementById('codigo-code').value = code.code;
     document.getElementById('codigo-description').value = code.description || '';
     document.getElementById('codigo-link').value = code.link || '';
+    document.getElementById('codigo-max-uses').value = code.max_uses !== undefined && code.max_uses !== null ? code.max_uses : '';
     document.getElementById('codigo-expires').value = code.expires_at ? code.expires_at.slice(0, 16) : '';
     modal.style.display = 'block';
 }
@@ -944,6 +979,8 @@ async function manejarSubmitCodigo(event) {
     const description = document.getElementById('codigo-description').value.trim();
     const link = document.getElementById('codigo-link').value.trim() || null;
     const expires = document.getElementById('codigo-expires').value || null;
+    const maxUsesRaw = document.getElementById('codigo-max-uses').value;
+    const max_uses = maxUsesRaw !== '' ? parseInt(maxUsesRaw, 10) : null;
 
     if (!code) {
         alert('El código es obligatorio.');
@@ -953,11 +990,11 @@ async function manejarSubmitCodigo(event) {
     try {
         if (codigoId) {
             await fetchData(`/api/admin/codigos/${codigoId}`, 'PUT', {
-                code, description, link, expires_at: expires
+                code, description, link, expires_at: expires, max_uses
             });
         } else {
             await fetchData('/api/admin/codigos', 'POST', {
-                code, description, link, expires_at: expires
+                code, description, link, expires_at: expires, max_uses
             });
         }
         cerrarModal();
