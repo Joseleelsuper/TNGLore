@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cargar servidores del bot via AJAX (no bloquea el render de la página)
     loadBotServers();
 
+    // Cargar códigos del usuario
+    loadUserCodes();
+
     // Cargar historial de cofres
     loadOpeningHistory();
 
@@ -99,6 +102,36 @@ async function loadBotServers() {
         `).join('');
     } catch (error) {
         serverList.innerHTML = '<p class="no-servers">Error al cargar servidores</p>';
+    }
+}
+
+
+// ─── Códigos del usuario ──────────────────────────────────
+
+async function loadUserCodes() {
+    const list = document.getElementById('codes-list');
+    if (!list) return;
+
+    try {
+        const res = await fetch('/api/user/codes');
+        if (!res.ok) throw new Error('Error');
+        const codes = await res.json();
+
+        if (codes.length === 0) {
+            list.innerHTML = '<p class="codes-empty">No tienes códigos asignados.</p>';
+            return;
+        }
+
+        list.innerHTML = codes.map(c => `
+            <div class="code-entry">
+                <div class="code-value">${c.code}</div>
+                ${c.description ? `<p class="code-desc">${c.description}</p>` : ''}
+                ${c.link ? `<a class="code-link" href="${c.link}" target="_blank" rel="noopener">🔗 Canjear aquí</a>` : ''}
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error(e);
+        list.innerHTML = '<p class="codes-empty">Error al cargar códigos.</p>';
     }
 }
 

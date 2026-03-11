@@ -806,9 +806,24 @@ function renderizarCodigos(codigos) {
 function crearElementoCodigo(code) {
     const div = document.createElement('div');
     div.className = 'card codigo-card';
-    const isAssigned = !!code.assigned_to;
-    const statusClass = isAssigned ? 'status-assigned' : (code.active ? 'status-available' : 'status-inactive');
-    const statusText = isAssigned ? `Asignado a ${code.assigned_to}` : (code.active ? 'Disponible' : 'Inactivo');
+    const currentUses = code.current_uses || 0;
+    const maxUses = code.max_uses;
+    const isUnlimited = maxUses === 0;
+    const isSingleUse = maxUses === 1 || (maxUses === undefined && !isUnlimited);
+    const isFull = !isUnlimited && maxUses > 0 && currentUses >= maxUses;
+    const isAssigned = isSingleUse ? !!code.assigned_to : isFull;
+
+    const statusClass = isAssigned || isFull ? 'status-assigned' : (code.active ? 'status-available' : 'status-inactive');
+    let statusText;
+    if (!code.active) {
+        statusText = 'Inactivo';
+    } else if (isUnlimited) {
+        statusText = `Usos: ${currentUses}/∞`;
+    } else if (isSingleUse) {
+        statusText = code.assigned_to ? `Asignado a ${code.assigned_to}` : 'Disponible';
+    } else {
+        statusText = `Usos: ${currentUses}/${maxUses}`;
+    }
     const expiresText = code.expires_at ? `Expira: ${new Date(code.expires_at).toLocaleDateString('es')}` : '';
 
     div.innerHTML = `
@@ -863,8 +878,8 @@ function buscarCodigos() {
     const term = (document.getElementById('codigos-search')?.value || '').toLowerCase().trim();
     const status = document.getElementById('codigos-filter')?.value || 'all';
     let filtered = _allCodigos;
-    if (status === 'available') filtered = filtered.filter(c => c.active && !c.assigned_to);
-    else if (status === 'assigned') filtered = filtered.filter(c => !!c.assigned_to);
+    if (status === 'available') filtered = filtered.filter(c => c.active && !c.assigned_to && (c.max_uses === 0 || (c.current_uses || 0) < (c.max_uses || 1)));
+    else if (status === 'assigned') filtered = filtered.filter(c => (c.current_uses || 0) > 0);
     if (term) {
         filtered = filtered.filter(c =>
             c.code.toLowerCase().includes(term) ||
@@ -932,6 +947,7 @@ function editarCodigo(id) {
     document.getElementById('codigo-code').value = code.code;
     document.getElementById('codigo-description').value = code.description || '';
     document.getElementById('codigo-link').value = code.link || '';
+    document.getElementById('codigo-max-uses').value = code.max_uses !== undefined && code.max_uses !== null ? code.max_uses : '';
     document.getElementById('codigo-expires').value = code.expires_at ? code.expires_at.slice(0, 16) : '';
     modal.style.display = 'block';
 }
@@ -944,6 +960,8 @@ async function manejarSubmitCodigo(event) {
     const description = document.getElementById('codigo-description').value.trim();
     const link = document.getElementById('codigo-link').value.trim() || null;
     const expires = document.getElementById('codigo-expires').value || null;
+    const maxUsesRaw = document.getElementById('codigo-max-uses').value;
+    const max_uses = maxUsesRaw !== '' ? parseInt(maxUsesRaw, 10) : null;
 
     if (!code) {
         alert('El código es obligatorio.');
@@ -953,11 +971,11 @@ async function manejarSubmitCodigo(event) {
     try {
         if (codigoId) {
             await fetchData(`/api/admin/codigos/${codigoId}`, 'PUT', {
-                code, description, link, expires_at: expires
+                code, description, link, expires_at: expires, max_uses
             });
         } else {
             await fetchData('/api/admin/codigos', 'POST', {
-                code, description, link, expires_at: expires
+                code, description, link, expires_at: expires, max_uses
             });
         }
         cerrarModal();

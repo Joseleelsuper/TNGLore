@@ -657,6 +657,22 @@ def eliminar_coleccion(id):
 # ─── Códigos (pool para recompensa día 7) ────────────────────────────
 
 
+def _parse_max_uses(value: Any) -> int:
+    """Convierte el valor de max_uses a int.
+
+    - None / vacío / no numérico → 1 (uso único, retrocompat).
+    - 0 → 0 (ilimitado).
+    - N positivo → N.
+    """
+    if value is None or value == "" or value == "null":
+        return 1
+    try:
+        n = int(value)
+        return max(n, 0)
+    except (ValueError, TypeError):
+        return 1
+
+
 @safe_memoize(timeout=300)  # 5 minutos
 def get_all_codes_cached() -> List[Dict[str, Any]]:
     """Obtiene todos los códigos con caché para admin."""
@@ -670,6 +686,10 @@ def get_all_codes_cached() -> List[Dict[str, Any]]:
                 code["assigned_at"] = code["assigned_at"].isoformat()
             if code.get("created_at"):
                 code["created_at"] = code["created_at"].isoformat()
+            # Serializar assigned_users datetimes
+            for au in code.get("assigned_users", []):
+                if au.get("assigned_at") and not isinstance(au["assigned_at"], str):
+                    au["assigned_at"] = au["assigned_at"].isoformat()
         return codes
     except Exception as e:
         current_app.logger.error(f"Error getting codes: {e}")
@@ -731,6 +751,9 @@ def crear_codigo() -> tuple:
                 "assigned_at": None,
                 "created_at": now,
                 "expires_at": expires_at,
+                "max_uses": _parse_max_uses(item.get("max_uses")),
+                "current_uses": 0,
+                "assigned_users": [],
             }
             result = mongo.codes.insert_one(doc)
             created_ids.append(str(result.inserted_id))
@@ -771,6 +794,8 @@ def actualizar_codigo(id: str) -> tuple:
                 updates["expires_at"] = datetime.fromisoformat(data["expires_at"]) if data["expires_at"] else None
             except (ValueError, TypeError):
                 pass
+        if "max_uses" in data:
+            updates["max_uses"] = _parse_max_uses(data["max_uses"])
 
         if not updates:
             return jsonify({"message": "Sin cambios"}), 200

@@ -173,6 +173,8 @@
                 <input type="text" id="codigo-code" placeholder="Código" required>
                 <input type="text" id="codigo-description" placeholder="Descripción (opcional)">
                 <input type="url" id="codigo-link" placeholder="Enlace de canje (opcional)">
+                <input type="number" id="codigo-max-uses" placeholder="Usos máximos (vacío = 1, 0 = ilimitado)" min="0">
+                <label for="codigo-max-uses" class="small-label">Usos máximos (vacío = 1, 0 = ilimitado)</label>
                 <input type="datetime-local" id="codigo-expires">
                 <label for="codigo-expires" class="small-label">Fecha de expiración (opcional)</label>
                 <button type="submit" class="admin-btn">Guardar</button>

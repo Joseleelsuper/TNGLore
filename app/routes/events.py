@@ -121,25 +121,47 @@ def _create_reward_chest(
 def _assign_code_from_pool(email: str) -> Optional[Dict[str, Any]]:
     """Asigna un código disponible del pool al usuario.
 
+    Soporta códigos de un solo uso, múltiples usos y usos ilimitados.
+    - ``max_uses == 0``  → ilimitado.
+    - ``max_uses == N``  → N usos máximos.
+    - Campo ausente       → 1 uso (retrocompatibilidad).
+
+    No asigna el mismo código dos veces al mismo usuario.
+
     Returns:
         Dict con el código asignado, o None si no hay disponibles.
     """
     try:
         now = datetime.now(timezone.utc)
-        code_doc = mongo.codes.find_one_and_update(
-            {
-                "active": True,
-                "assigned_to": None,
-                "$or": [
+
+        # Códigos con capacidad disponible:
+        #   - max_uses == 0 → ilimitado (siempre disponible)
+        #   - max_uses > 0 y current_uses < max_uses
+        #   - Campo ausente (retrocompat): assigned_to == None
+        availability_conditions = [
+            {"max_uses": 0},
+            {"$expr": {"$lt": ["$current_uses", "$max_uses"]}},
+            {"max_uses": {"$exists": False}, "assigned_to": None},
+        ]
+
+        query: Dict[str, Any] = {
+            "active": True,
+            "assigned_users.email": {"$ne": email},
+            "$and": [
+                {"$or": [
                     {"expires_at": None},
                     {"expires_at": {"$gt": now}},
-                ],
-            },
+                ]},
+                {"$or": availability_conditions},
+            ],
+        }
+
+        code_doc = mongo.codes.find_one_and_update(
+            query,
             {
-                "$set": {
-                    "assigned_to": email,
-                    "assigned_at": now,
-                },
+                "$inc": {"current_uses": 1},
+                "$push": {"assigned_users": {"email": email, "assigned_at": now}},
+                "$set": {"assigned_to": email, "assigned_at": now},
             },
             return_document=True,
         )
@@ -285,7 +307,9 @@ def active_events() -> tuple:
             # Check for assigned code (if completed and event had a code day)
             assigned_code = None
             if completed:
-                code_doc = mongo.codes.find_one({"assigned_to": current_user.email})
+                code_doc = mongo.codes.find_one({
+                    "assigned_users.email": current_user.email,
+                })
                 if code_doc:
                     assigned_code = {
                         "code": code_doc["code"],
@@ -392,7 +416,10 @@ def claim_event_reward(event_id: str) -> tuple:
         }
 
         if r_type == "code":
-            code_data = _assign_code_from_pool(current_user.email)
+            # Comprobar si el usuario tiene denegada la recepción de códigos
+            deny_code = getattr(current_user, "deny_code_reward", False)
+            code_data = None if deny_code else _assign_code_from_pool(current_user.email)
+
             if code_data:
                 result_data["code"] = code_data["code"]
                 result_data["code_description"] = code_data.get("description", "")
@@ -406,10 +433,17 @@ def claim_event_reward(event_id: str) -> tuple:
                 })
             else:
                 # Fallback: legendary chest
-                logger.warning(
-                    "No codes available for user %s event %s, fallback to chest",
-                    current_user.email, eid_str,
-                )
+                if deny_code:
+                    logger.info(
+                        "User %s has deny_code_reward, giving legendary chest instead",
+                        current_user.email,
+                    )
+                    result_data["denied"] = True
+                else:
+                    logger.warning(
+                        "No codes available for user %s event %s, fallback to chest",
+                        current_user.email, eid_str,
+                    )
                 chest_id = _create_reward_chest(
                     current_user.email, "legendaria", servidor
                 )
