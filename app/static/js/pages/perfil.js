@@ -122,13 +122,45 @@ async function loadUserCodes() {
             return;
         }
 
-        list.innerHTML = codes.map(c => `
-            <div class="code-entry">
-                <div class="code-value">${c.code}</div>
-                ${c.description ? `<p class="code-desc">${c.description}</p>` : ''}
-                ${c.link ? `<a class="code-link" href="${c.link}" target="_blank" rel="noopener">🔗 Canjear aquí</a>` : ''}
-            </div>
-        `).join('');
+        list.innerHTML = '';
+        for (const c of codes) {
+            const entry = document.createElement('div');
+            entry.className = 'code-entry';
+
+            const value = document.createElement('div');
+            value.className = 'code-value';
+            value.textContent = c.code;
+            entry.appendChild(value);
+
+            if (c.description) {
+                const desc = document.createElement('p');
+                desc.className = 'code-desc';
+                desc.textContent = c.description;
+                entry.appendChild(desc);
+            }
+
+            if (c.link) {
+                let safeHref = null;
+                try {
+                    const url = new URL(c.link);
+                    if (url.protocol === 'https:' || url.protocol === 'http:') {
+                        safeHref = url.href;
+                    }
+                } catch (_) { /* invalid URL — skip */ }
+
+                if (safeHref) {
+                    const a = document.createElement('a');
+                    a.className = 'code-link';
+                    a.href = safeHref;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    a.textContent = '🔗 Canjear aquí';
+                    entry.appendChild(a);
+                }
+            }
+
+            list.appendChild(entry);
+        }
     } catch (e) {
         console.error(e);
         list.innerHTML = '<p class="codes-empty">Error al cargar códigos.</p>';

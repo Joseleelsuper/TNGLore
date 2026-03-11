@@ -803,26 +803,38 @@ function renderizarCodigos(codigos) {
     container.appendChild(fragment);
 }
 
+/** Normaliza max_uses: null/undefined → 1, 0 = ilimitado, N = N usos. */
+function normMaxUses(code) {
+    const v = code.max_uses;
+    return (v === null || v === undefined) ? 1 : v;
+}
+
 function crearElementoCodigo(code) {
     const div = document.createElement('div');
     div.className = 'card codigo-card';
     const currentUses = code.current_uses || 0;
-    const maxUses = code.max_uses;
+    const maxUses = normMaxUses(code);
     const isUnlimited = maxUses === 0;
-    const isSingleUse = maxUses === 1 || (maxUses === undefined && !isUnlimited);
-    const isFull = !isUnlimited && maxUses > 0 && currentUses >= maxUses;
-    const isAssigned = isSingleUse ? !!code.assigned_to : isFull;
+    const hasCapacity = isUnlimited || currentUses < maxUses;
 
-    const statusClass = isAssigned || isFull ? 'status-assigned' : (code.active ? 'status-available' : 'status-inactive');
-    let statusText;
+    let statusClass, statusText;
     if (!code.active) {
+        statusClass = 'status-inactive';
         statusText = 'Inactivo';
     } else if (isUnlimited) {
+        statusClass = 'status-available';
         statusText = `Usos: ${currentUses}/∞`;
-    } else if (isSingleUse) {
-        statusText = code.assigned_to ? `Asignado a ${code.assigned_to}` : 'Disponible';
-    } else {
+    } else if (currentUses === 0) {
+        statusClass = 'status-available';
+        statusText = maxUses === 1 ? 'Disponible' : `Usos: 0/${maxUses}`;
+    } else if (hasCapacity) {
+        statusClass = 'status-partial';
         statusText = `Usos: ${currentUses}/${maxUses}`;
+    } else {
+        statusClass = 'status-assigned';
+        statusText = maxUses === 1 && code.assigned_to
+            ? `Asignado a ${code.assigned_to}`
+            : `Usos: ${currentUses}/${maxUses} (completo)`;
     }
     const expiresText = code.expires_at ? `Expira: ${new Date(code.expires_at).toLocaleDateString('es')}` : '';
 
@@ -878,8 +890,15 @@ function buscarCodigos() {
     const term = (document.getElementById('codigos-search')?.value || '').toLowerCase().trim();
     const status = document.getElementById('codigos-filter')?.value || 'all';
     let filtered = _allCodigos;
-    if (status === 'available') filtered = filtered.filter(c => c.active && !c.assigned_to && (c.max_uses === 0 || (c.current_uses || 0) < (c.max_uses || 1)));
-    else if (status === 'assigned') filtered = filtered.filter(c => (c.current_uses || 0) > 0);
+    if (status === 'available') {
+        filtered = filtered.filter(c => {
+            if (!c.active) return false;
+            const max = normMaxUses(c);
+            return max === 0 || (c.current_uses || 0) < max;
+        });
+    } else if (status === 'assigned') {
+        filtered = filtered.filter(c => (c.current_uses || 0) > 0);
+    }
     if (term) {
         filtered = filtered.filter(c =>
             c.code.toLowerCase().includes(term) ||
