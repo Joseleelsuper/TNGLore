@@ -220,7 +220,7 @@ function showRewardPopup({ title, emoji, message, code, codeLink, onClose }) {
     });
 }
 
-function showServerSelectPopup({ title, emoji, guilds }) {
+function showServerSelectPopup({ title, emoji, guilds, note = '' }) {
     return new Promise((resolve) => {
         const options = guilds.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
         const backdrop = document.createElement('div');
@@ -229,6 +229,7 @@ function showServerSelectPopup({ title, emoji, guilds }) {
             <div class="reward-popup">
                 <div class="popup-emoji">${emoji || '🎁'}</div>
                 <h3>${title || '¡Recompensa!'}</h3>
+                ${note ? `<p class="popup-msg popup-note">${note}</p>` : ''}
                 <p class="popup-msg">Elige en qué servidor quieres guardar la recompensa:</p>
                 <label class="server-select-label">Servidor</label>
                 <select id="popup-server-select">${options}</select>
@@ -279,18 +280,50 @@ async function claimEventReward(btn, eventId, reward) {
             });
         }
 
-        const res = await fetch(`/api/events/${eventId}/claim`, {
+        let res = await fetch(`/api/events/${eventId}/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ server_id: serverId }),
         });
-        const data = await res.json();
+        let data = await res.json();
 
         if (!res.ok) {
             showErrorPopup(data.error || 'Error al reclamar');
             btn.disabled = false;
             btn.textContent = 'Reclamar';
             return;
+        }
+
+        // Backend signalled it needs a server selection (code reward fell back to a chest).
+        // Show the server popup now, then retry the claim with the chosen server.
+        if (data.needs_server) {
+            if (!_userGuilds || _userGuilds.length === 0) {
+                showErrorPopup('Para reclamar este cofre primero debes unirte a un servidor de TNGLore en Discord.');
+                btn.disabled = false;
+                btn.textContent = 'Reclamar';
+                return;
+            }
+            const note = data.denied
+                ? 'No puedes recibir códigos. Se te ha otorgado un cofre legendario.'
+                : 'No había códigos disponibles. Se te ha otorgado un cofre legendario.';
+            serverId = await showServerSelectPopup({
+                title: `¡Cofre ${data.rarity}!`,
+                emoji: RARITY_EMOJIS[data.rarity] || '📦',
+                guilds: _userGuilds,
+                note,
+            });
+            res = await fetch(`/api/events/${eventId}/claim`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ server_id: serverId }),
+            });
+            data = await res.json();
+            if (!res.ok) {
+                showErrorPopup(data.error || 'Error al reclamar');
+                btn.disabled = false;
+                btn.textContent = 'Reclamar';
+                return;
+            }
         }
 
         // Show reward feedback
@@ -311,13 +344,10 @@ async function claimEventReward(btn, eventId, reward) {
                 onClose: () => loadActiveEvents(),
             });
         } else {
-            const denyMsg = data.denied
-                ? '\nNo puedes recibir códigos. Se te ha otorgado un cofre legendario.'
-                : data.fallback ? '\n(No había códigos disponibles)' : '';
             showRewardPopup({
                 title: `Día ${data.day}`,
                 emoji: RARITY_EMOJIS[data.rarity] || '📦',
-                message: `¡Has recibido un cofre ${data.rarity}!${denyMsg}`,
+                message: `¡Has recibido un cofre ${data.rarity}!`,
                 onClose: () => loadActiveEvents(),
             });
         }
