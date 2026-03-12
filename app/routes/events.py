@@ -433,6 +433,18 @@ def claim_event_reward(event_id: str) -> tuple:
                 })
             else:
                 # Fallback: legendary chest
+                # If the frontend didn't pick a server yet (it skips server
+                # selection for code rewards), return early so the frontend
+                # can show the server-selection popup before we create anything.
+                if not server_id:
+                    return jsonify({
+                        "needs_server": True,
+                        "denied": deny_code,
+                        "rarity": "legendaria",
+                        "day": current_day,
+                        "event_id": eid_str,
+                    }), 200
+
                 if deny_code:
                     logger.info(
                         "User %s has deny_code_reward, giving legendary chest instead",
