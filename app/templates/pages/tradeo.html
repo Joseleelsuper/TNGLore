@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ images['icons']['favicon'] }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/tradeo.css') }}">
+    <title>TNGLore - Tradeo</title>
+</head>
+<body>
+    {% include 'components/header.html' %}
+
+    <main class="trade-main">
+        <section class="trade-hero container">
+            <div>
+                <h1>Tradeo de Cartas</h1>
+                <p>Publica cartas, recibe ofertas y acepta tradeos en cola uno por uno.</p>
+            </div>
+            <div class="trade-hero-actions">
+                <button id="btn-publicar" class="btn-base btn-primary">Publicar Carta</button>
+                <button id="btn-refresh" class="btn-base btn-ghost">Actualizar</button>
+            </div>
+        </section>
+
+        <section class="container">
+            <div id="trade-feedback" class="trade-feedback" style="display:none"></div>
+        </section>
+
+        <section class="container trade-layout">
+            <article class="section-box trade-panel" id="pending-panel">
+                <div class="panel-head">
+                    <h2>Cola de Propuestas</h2>
+                    <span id="pending-count" class="pill-count">0</span>
+                </div>
+                <div id="pending-content" class="pending-content"></div>
+            </article>
+
+            <article class="section-box trade-panel" id="my-listings-panel">
+                <div class="panel-head">
+                    <h2>Mis Cartas Publicadas</h2>
+                    <span class="panel-sub">Maximo: 6</span>
+                </div>
+                <div id="my-listings-content" class="cards-grid"></div>
+            </article>
+        </section>
+
+        <section class="container section-box trade-marketplace">
+            <div class="panel-head">
+                <h2>Marketplace</h2>
+                <span id="market-total" class="panel-sub">0 publicaciones</span>
+            </div>
+            <div id="market-content" class="cards-grid"></div>
+        </section>
+    </main>
+
+    <div id="overlay" class="overlay" style="display: none;">
+        <div class="overlay-content"></div>
+    </div>
+
+    <script type="module" src="{{ url_for('static', filename='js/pages/tradeo.js') }}"></script>
+</body>
+</html>

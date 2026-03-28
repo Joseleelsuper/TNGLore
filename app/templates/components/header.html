@@ -12,6 +12,15 @@ window.__USER__ = {
     isAdmin: {{ 'true' if current_user.is_authenticated and current_user.is_admin else 'false' }},
     pfp: {{ (current_user.pfp | tojson) if current_user.is_authenticated and current_user.pfp else 'null' }}
 };
+
+// Configurable nav highlights: add/remove entries to toggle "new" badges.
+window.__HEADER_NAV_FEATURES__ = {
+    tradeo: {
+        enabled: true,
+        text: 'NUEVO',
+        tone: 'new'
+    }
+};
 </script>
 
 <!-- Registro del Service Worker -->
@@ -29,16 +38,17 @@ if ('serviceWorker' in navigator) {
     </div>
     <nav>
         <ul>
-            <li><a href="/mi-coleccion"><strong>Mi Colección</strong></a></li>
-            <li><a href="/cofres"><strong>Mis Cofres</strong></a></li>
-            <li><a href="/colecciones"><strong>Colecciones</strong></a></li>
+            <li><a href="/mi-coleccion" data-nav-key="mi-coleccion"><strong>Mi Colección</strong></a></li>
+            <li><a href="/cofres" data-nav-key="cofres"><strong>Mis Cofres</strong></a></li>
+            <li><a href="/tradeo" data-nav-key="tradeo"><strong>Tradeo</strong></a></li>
+            <li><a href="/colecciones" data-nav-key="colecciones"><strong>Colecciones</strong></a></li>
             <li>
-                <a href="/perfil">
+                <a href="/perfil" data-nav-key="perfil">
                     <img id="profile-icon" src="https://www.whoseno.com/images/user-icon.png" alt="Perfil" class="profile-icon">
                 </a>
             </li>
             <li id="admin-panel" style="display: none;">
-                <a href="/admin"><strong>Panel de Administrador</strong></a>
+                <a href="/admin" data-nav-key="admin"><strong>Panel de Administrador</strong></a>
             </li>
         </ul>
     </nav>

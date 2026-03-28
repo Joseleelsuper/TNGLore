@@ -59,6 +59,7 @@ def create_app():
     from app.routes.perfil import perfil_bp
     from app.routes.faq import faq_bp
     from app.routes.events import events_bp
+    from app.routes.tradeo import tradeo_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -68,6 +69,7 @@ def create_app():
     app.register_blueprint(perfil_bp)
     app.register_blueprint(faq_bp)
     app.register_blueprint(events_bp)
+    app.register_blueprint(tradeo_bp)
 
     # Ensure indexes for event_progress
     try:
@@ -78,13 +80,30 @@ def create_app():
         )
     except Exception as idx_err:
         app.logger.warning(f"Could not create event_progress index: {idx_err}")
+
+    # Ensure indexes for trade marketplace
+    try:
+        mongo.trade_marketplace.create_index(
+            [("listing_status", 1), ("card_id", 1), ("created_at", 1)],
+            background=True,
+        )
+        mongo.trade_marketplace.create_index(
+            [("owner_email", 1), ("listing_status", 1), ("created_at", -1)],
+            background=True,
+        )
+        mongo.trade_marketplace.create_index(
+            [("offers.offerer_email", 1), ("offers.status", 1)],
+            background=True,
+        )
+    except Exception as idx_err:
+        app.logger.warning(f"Could not create trade_marketplace indexes: {idx_err}")
     
     # Registrar template helpers para optimización de imágenes
     from app.utils.template_helpers import register_template_helpers
     register_template_helpers(app)
     
     # Ruta para estadísticas de caché (solo en desarrollo)
-    @app.route('/cache/stats')
+    @app.route('/cache/stats', methods=['GET'])
     def cache_stats():
         if app.debug and cache_manager:
             stats = cache_manager.get_stats()
@@ -92,7 +111,7 @@ def create_app():
         return {"error": "Not available in production"}, 404
     
     # Ruta para limpiar caché (solo en desarrollo)
-    @app.route('/cache/clear')
+    @app.route('/cache/clear', methods=['GET'])
     def clear_cache():
         if app.debug and cache_manager:
             cache.clear()

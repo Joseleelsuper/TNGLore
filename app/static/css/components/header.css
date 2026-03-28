@@ -52,6 +52,9 @@ nav ul li a {
     font-weight: 600;
     padding: var(--sp-2) var(--sp-3);
     border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
     transition: background var(--transition-fast), color var(--transition-fast);
 }
 
@@ -59,6 +62,41 @@ nav ul li a:hover,
 nav ul li a:active {
     color: var(--color-primary);
     background: var(--color-primary-light);
+}
+
+/* Reusable highlighted option component for nav entries */
+.header-nav-featured {
+    border: 1px solid #f5ae24;
+    background: linear-gradient(180deg, #fffdf3 0%, #fff7da 100%);
+    box-shadow: 0 1px 8px rgba(245, 174, 36, 0.2);
+}
+
+.header-nav-featured:hover,
+.header-nav-featured:active {
+    border-color: #ea9802;
+    background: linear-gradient(180deg, #fff9ea 0%, #fff1c1 100%);
+}
+
+.header-nav-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 18px;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    border: 1px solid #f5ae24;
+    color: #9b5f00;
+    background: #fff1c9;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1;
+}
+
+.header-nav-badge-new {
+    border-color: #f5ae24;
+    color: #9b5f00;
+    background: #fff1c9;
 }
 
 .nav-toggle {
@@ -150,6 +188,7 @@ nav ul li a:active {
         text-align: center;
         font-size: var(--fs-md);
         border-radius: var(--radius-sm);
+        justify-content: center;
     }
 
     nav ul li a:hover {
@@ -159,5 +198,9 @@ nav ul li a:active {
     .profile-icon {
         width: 64px !important;
         height: 64px !important;
+    }
+
+    .header-nav-badge {
+        font-size: 0.62rem;
     }
 }
