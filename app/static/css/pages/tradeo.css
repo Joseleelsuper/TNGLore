@@ -1,0 +1,442 @@
+/* Tradeo page */
+
+.trade-main {
+    padding: var(--sp-5) 0 var(--sp-8);
+}
+
+.trade-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-4);
+}
+
+.trade-hero h1 {
+    font-size: var(--fs-2xl);
+    margin-bottom: var(--sp-1);
+    color: var(--color-text);
+}
+
+.trade-hero p {
+    color: var(--color-text-secondary);
+}
+
+.trade-hero-actions {
+    display: flex;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.btn-ghost:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.trade-feedback {
+    margin-bottom: var(--sp-4);
+    border-radius: var(--radius-sm);
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+}
+
+.trade-feedback.success {
+    border-color: #2ecc71;
+    background: #ecfff3;
+    color: #1e7f46;
+}
+
+.trade-feedback.error {
+    border-color: #ff7675;
+    background: #fff1f1;
+    color: #b33939;
+}
+
+.trade-layout {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-4);
+}
+
+.trade-panel {
+    min-height: 260px;
+}
+
+.panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-3);
+}
+
+.panel-head h2 {
+    font-size: var(--fs-lg);
+}
+
+.panel-sub {
+    color: var(--color-text-secondary);
+    font-size: var(--fs-sm);
+}
+
+.pill-count {
+    min-width: 34px;
+    height: 28px;
+    border-radius: var(--radius-pill);
+    background: var(--color-primary-light);
+    color: var(--color-primary-dark);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: var(--fs-sm);
+    padding: 0 var(--sp-2);
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--sp-3);
+}
+
+.trade-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+.trade-card-media {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    background: #eef2ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.trade-card-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.trade-card-media img:hover {
+    transform: scale(1.02);
+}
+
+.trade-card-body {
+    padding: var(--sp-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    flex: 1;
+}
+
+.trade-card-title {
+    font-size: var(--fs-md);
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.trade-card-rarity {
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.trade-card-server {
+    font-size: var(--fs-sm);
+    color: var(--color-text-secondary);
+}
+
+.trade-card-footer {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+}
+
+.trade-card-footer .btn-base {
+    width: 100%;
+    padding: 0.5rem 0.7rem;
+    font-size: var(--fs-sm);
+}
+
+.empty-state {
+    color: var(--color-text-secondary);
+    text-align: center;
+    padding: var(--sp-5);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.trade-marketplace {
+    margin-top: var(--sp-4);
+}
+
+.avatar-stack {
+    display: flex;
+    align-items: center;
+    min-height: 26px;
+}
+
+.avatar-stack img {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: var(--shadow-sm);
+    margin-left: -9px;
+    object-fit: cover;
+    background: #fff;
+}
+
+.avatar-stack img:first-child {
+    margin-left: 0;
+}
+
+.avatar-stack .avatar-more {
+    width: 26px;
+    height: 26px;
+    margin-left: -9px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    background: #dfe6ff;
+    color: #1f3fa5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.pending-content {
+    min-height: 170px;
+}
+
+.queue-card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--sp-3);
+    background: var(--color-surface-alt);
+}
+
+.queue-users {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-3);
+    color: var(--color-text-secondary);
+    font-size: var(--fs-sm);
+}
+
+.queue-users img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.queue-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-3);
+}
+
+.queue-mini {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    padding: var(--sp-2);
+}
+
+.queue-mini img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--sp-2);
+    cursor: pointer;
+}
+
+.queue-mini h4 {
+    font-size: var(--fs-sm);
+    margin-bottom: var(--sp-1);
+}
+
+.queue-mini p {
+    font-size: var(--fs-xs);
+    color: var(--color-text-secondary);
+}
+
+.queue-actions {
+    display: flex;
+    gap: var(--sp-2);
+}
+
+.btn-danger {
+    background: #b93124;
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background: #8f251b;
+}
+
+.trade-selector-header {
+    margin-bottom: var(--sp-3);
+}
+
+.trade-selector-header h2 {
+    font-size: var(--fs-xl);
+    margin-bottom: var(--sp-1);
+}
+
+.trade-selector-header p {
+    color: var(--color-text-secondary);
+    font-size: var(--fs-sm);
+}
+
+.trade-selector-target {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-3);
+    padding: var(--sp-2);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.trade-selector-target img {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+}
+
+.trade-selector-target p {
+    font-size: var(--fs-sm);
+    color: var(--color-text-secondary);
+}
+
+.trade-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-3);
+}
+
+.trade-selector-card {
+    text-align: left;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
+    padding: 0;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.trade-selector-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-primary);
+}
+
+.trade-selector-card.selected {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.trade-selector-media {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    background: #eef2ff;
+}
+
+.trade-selector-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.trade-selector-info {
+    padding: var(--sp-2);
+}
+
+.trade-selector-info h4 {
+    font-size: var(--fs-sm);
+    margin-bottom: var(--sp-1);
+}
+
+.trade-selector-info p {
+    font-size: var(--fs-xs);
+    color: var(--color-text-secondary);
+}
+
+.trade-selector-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--sp-2);
+}
+
+@media (max-width: 1024px) {
+    .trade-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .trade-main {
+        padding-top: var(--sp-4);
+    }
+
+    .trade-hero {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .trade-hero-actions {
+        width: 100%;
+    }
+
+    .trade-hero-actions .btn-base {
+        flex: 1;
+    }
+
+    .cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .queue-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .trade-selector-actions {
+        flex-direction: column;
+    }
+
+    .trade-selector-actions .btn-base {
+        width: 100%;
+    }
+
+    .trade-selector-target {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
