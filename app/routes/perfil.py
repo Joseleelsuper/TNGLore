@@ -154,8 +154,9 @@ def api_opening_history():
 
         # Serializar datetimes
         for entry in entries:
-            if entry.get("opened_at"):
-                entry["opened_at"] = entry["opened_at"].isoformat()
+            opened_at = entry.get("opened_at")
+            if opened_at and hasattr(opened_at, "isoformat"):
+                entry["opened_at"] = opened_at.isoformat()
 
         # Resolver chest_source (guild ID) a nombre de servidor
         guilds = getattr(current_user, "guilds", None) or []

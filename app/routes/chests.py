@@ -106,7 +106,7 @@ def get_chest_rarity_colors() -> Dict[str, str]:
     return _yaml_rarity_colors()
 
 
-@chest_bp.route("/cofres")
+@chest_bp.route("/cofres", methods=["GET"])
 @login_required
 def chests():
     """Página de cofres con datos cacheados."""
@@ -129,7 +129,9 @@ def chests():
 @login_required
 def open_chests():
     """API para abrir cofres (síncrono)."""
-    data = request.get_json()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        data = {}
     chest_type = data.get("chest_type")
     server = data.get("server")
 
@@ -143,7 +145,7 @@ def open_chests():
     safe_delete_memoized(get_user_collectibles_data, current_user.email)
 
     try:
-        result = _open_chest_sync(current_user.email, chest_type, server)
+        result = _open_chests_sync(current_user.email, chest_type, server, quantity=1)
         if "error" in result:
             return jsonify(result), 400
         return jsonify(result)
@@ -152,67 +154,138 @@ def open_chests():
         return jsonify({"error": "Error interno al abrir cofre"}), 500
 
 
+@chest_bp.route("/api/open_chests_multi", methods=["POST"])
+@login_required
+def open_chests_multi():
+    """API para abrir 1 o N cofres del mismo tipo y servidor."""
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        data = {}
+    chest_type = data.get("chest_type")
+    server = data.get("server")
+    quantity_raw = data.get("quantity")
+
+    if not server:
+        return jsonify({"error": "Servidor no especificado"}), 400
+    if chest_type not in _yaml_chest_config():
+        return jsonify({"error": "Tipo de cofre inválido"}), 400
+
+    try:
+        quantity = int(quantity_raw)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Cantidad de cofres inválida"}), 400
+
+    if quantity < 1:
+        return jsonify({"error": "La cantidad de cofres debe ser mayor a 0"}), 400
+
+    safe_delete_memoized(get_user_chests_data, current_user.email)
+    safe_delete_memoized(get_user_collectibles_data, current_user.email)
+
+    try:
+        result = _open_chests_sync(current_user.email, chest_type, server, quantity=quantity)
+        if "error" in result:
+            return jsonify(result), 400
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error opening multiple chests: {e}", exc_info=True)
+        return jsonify({"error": "Error interno al abrir cofres"}), 500
+
+
 def _open_chest_sync(email: str, chest_type: str, server: str) -> dict:
-    """Abre un cofre de forma síncrona."""
-    user_data = mongo.users.find_one({"email": email})
-    if not user_data:
-        return {"error": "Usuario no encontrado"}
+    """Wrapper legado para abrir un cofre."""
+    return _open_chests_sync(email, chest_type, server, quantity=1)
 
-    user_chest_ids = user_data.get("chests", [])
-    matching_id = None
 
-    if user_chest_ids:
-        object_ids = [ObjectId(cid) for cid in user_chest_ids]
-        matching_chests = list(mongo.chests.find({
-            "_id": {"$in": object_ids},
-            "rarity": chest_type,
-            "servidor": server
-        }).limit(1))
-        if matching_chests:
-            matching_id = str(matching_chests[0]["_id"])
+def _get_matching_user_chests(
+    user_chest_ids: List[str], chest_type: str, server: str
+) -> List[str]:
+    """Devuelve todas las ocurrencias de IDs de cofres del usuario que coinciden con tipo+servidor."""
+    if not user_chest_ids:
+        return []
 
-    if not matching_id:
-        return {"error": "No tienes el cofre indicado"}
+    object_ids: List[ObjectId] = []
+    for chest_id in set(user_chest_ids):
+        try:
+            object_ids.append(ObjectId(chest_id))
+        except Exception:
+            logger.warning(f"Invalid chest id found for user inventory: {chest_id}")
 
+    if not object_ids:
+        return []
+
+    matching_docs = list(
+        mongo.chests.find(
+            {
+                "_id": {"$in": object_ids},
+                "rarity": chest_type,
+                "servidor": server,
+            },
+            {"_id": 1},
+        )
+    )
+
+    matching_id_set = {str(doc["_id"]) for doc in matching_docs}
+    if not matching_id_set:
+        return []
+
+    return [chest_id for chest_id in user_chest_ids if chest_id in matching_id_set]
+
+
+def _remove_chest_occurrences(chest_ids: List[str], ids_to_remove: List[str]) -> List[str]:
+    """Elimina exactamente N ocurrencias de IDs, respetando duplicados."""
+    removal_counter: Dict[str, int] = dict(Counter(ids_to_remove))
+    remaining_ids: List[str] = []
+    for chest_id in chest_ids:
+        current_count = removal_counter.get(chest_id, 0)
+        if current_count > 0:
+            removal_counter[chest_id] = current_count - 1
+            continue
+        remaining_ids.append(chest_id)
+    return remaining_ids
+
+
+def _draw_cards_for_chests(chest_type: str, chest_count: int) -> Dict[str, Any]:
+    """Sortea las cartas de N cofres usando la misma lógica de probabilidades actual."""
     chest_cfg = _yaml_chest_config()
     card_rarities = _yaml_card_rarities()
     config = chest_cfg[chest_type]
+
+    total_cards = config["cards"] * chest_count
     cards: List[Dict[str, Any]] = []
     received_card_ids: List[str] = []
 
-    for _ in range(config["cards"]):
-        r = random.uniform(0, 100)
-        cumulative = 0
+    for _ in range(total_cards):
+        roll = random.uniform(0, 100)
+        cumulative = 0.0
+        selected_rarity = card_rarities[-1] if card_rarities else "comun"
+
         for rarity, prob in zip(card_rarities, config["probabilities"]):
             cumulative += prob
-            if r <= cumulative:
-                pipeline = [{"$match": {"rareza": rarity}}, {"$sample": {"size": 1}}]
-                results = list(mongo.collectables.aggregate(pipeline))
-                if results:
-                    card_doc = serialize_doc(results[0])
-                    cards.append(card_doc)
-                    if isinstance(card_doc, dict) and "_id" in card_doc:
-                        received_card_ids.append(card_doc["_id"])
-                else:
-                    cards.append({"nombre": f"Sin carta {rarity}", "rareza": rarity})
+            if roll <= cumulative:
+                selected_rarity = rarity
                 break
 
-    # Eliminar solo una ocurrencia del cofre abierto
-    user_chests = user_data.get("chests", [])
-    try:
-        user_chests.remove(matching_id)
-    except ValueError:
-        pass
+        pipeline = [{"$match": {"rareza": selected_rarity}}, {"$sample": {"size": 1}}]
+        results = list(mongo.collectables.aggregate(pipeline))
+        if results:
+            card_doc = serialize_doc(results[0])
+            cards.append(card_doc)
+            if isinstance(card_doc, dict) and "_id" in card_doc:
+                received_card_ids.append(card_doc["_id"])
+        else:
+            cards.append({"nombre": f"Sin carta {selected_rarity}", "rareza": selected_rarity})
 
-    mongo.users.update_one(
-        {"email": email}, {"$set": {"chests": user_chests}}
-    )
-    mongo.users.update_one(
-        {"email": email, "guilds.id": server},
-        {"$push": {"guilds.$.coleccionables": {"$each": received_card_ids}}},
-    )
+    return {"cards": cards, "received_card_ids": received_card_ids}
 
-    # Guardar historial de apertura
+
+def _save_opening_history(
+    email: str,
+    chest_type: str,
+    server: str,
+    cards: List[Dict[str, Any]],
+    chests_opened: int,
+) -> None:
+    """Guarda una sola entrada de historial por operación de apertura."""
     try:
         history_cards: List[Dict[str, Any]] = []
         for card in cards:
@@ -223,20 +296,94 @@ def _open_chest_sync(email: str, chest_type: str, server: str) -> dict:
                 "coleccion": str(card.get("coleccion", "")),
                 "image": card.get("image", ""),
             })
+
         mongo.opening_history.insert_one({
             "user_email": email,
             "chest_type": chest_type,
             "chest_source": server,
+            "chests_opened": chests_opened,
             "cards_received": history_cards,
             "opened_at": datetime.now(timezone.utc),
         })
     except Exception as history_err:
         logger.warning(f"Failed to log chest opening history: {history_err}")
 
-    return {"results": {"chest_type": chest_type, "cards": cards}}
+
+def _open_chests_sync(email: str, chest_type: str, server: str, quantity: int) -> dict:
+    """Abre N cofres de forma síncrona con control básico de concurrencia."""
+    if quantity < 1:
+        return {"error": "Cantidad de cofres inválida"}
+
+    max_retries = 3
+    chest_ids_to_remove: List[str] = []
+    chests_to_open = 0
+
+    for attempt in range(max_retries):
+        user_data = mongo.users.find_one({"email": email}, {"chests": 1})
+        if not user_data:
+            return {"error": "Usuario no encontrado"}
+
+        user_chest_ids: List[str] = user_data.get("chests", [])
+        matching_user_chests = _get_matching_user_chests(user_chest_ids, chest_type, server)
+        if not matching_user_chests:
+            return {"error": "No tienes el cofre indicado"}
+
+        chests_to_open = min(quantity, len(matching_user_chests))
+        chest_ids_to_remove = matching_user_chests[:chests_to_open]
+        updated_chests = _remove_chest_occurrences(user_chest_ids, chest_ids_to_remove)
+
+        update_result = mongo.users.update_one(
+            {"email": email, "chests": user_chest_ids},
+            {"$set": {"chests": updated_chests}},
+        )
+        if update_result.modified_count == 1:
+            break
+
+        if attempt == max_retries - 1:
+            return {
+                "error": "Tu inventario cambió mientras abrías cofres. Inténtalo de nuevo"
+            }
+
+    try:
+        draw_result = _draw_cards_for_chests(chest_type, chests_to_open)
+        cards: List[Dict[str, Any]] = draw_result["cards"]
+        received_card_ids: List[str] = [
+            str(card_id)
+            for card_id in draw_result["received_card_ids"]
+            if card_id
+        ]
+
+        guild_update = mongo.users.update_one(
+            {"email": email, "guilds.id": server},
+            {"$push": {"guilds.$.coleccionables": {"$each": received_card_ids}}},
+        )
+
+        if guild_update.matched_count == 0:
+            mongo.users.update_one(
+                {"email": email},
+                {"$push": {"chests": {"$each": chest_ids_to_remove}}},
+            )
+            return {"error": "Servidor no encontrado para el usuario"}
+
+        _save_opening_history(email, chest_type, server, cards, chests_to_open)
+
+        return {
+            "results": {
+                "chest_type": chest_type,
+                "chests_opened": chests_to_open,
+                "cards": cards,
+            }
+        }
+    except Exception as open_err:
+        mongo.users.update_one(
+            {"email": email},
+            {"$push": {"chests": {"$each": chest_ids_to_remove}}},
+        )
+        logger.error(f"Error during chest opening flow: {open_err}", exc_info=True)
+        return {"error": "Error interno al abrir cofre"}
 
 
-@chest_bp.route("/api/chests/data")
+@chest_bp.route("/api/chests/data", methods=["GET"])
 @login_required
 def get_chests_data():
     """API endpoint para obtener datos de cofres con caché"""
@@ -253,7 +400,7 @@ def get_chests_data():
         }), 500
 
 
-@chest_bp.route("/api/chests/config")
+@chest_bp.route("/api/chests/config", methods=["GET"])
 def get_chests_config_api():
     """API endpoint para obtener configuración de cofres con caché"""
     try:
