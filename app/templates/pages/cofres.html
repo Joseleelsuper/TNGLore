@@ -26,10 +26,18 @@
             <!-- Contenedor oculto con los cofres originales para que JavaScript pueda procesarlos -->
             <div id="chest-data" style="display: none;">
                 {% for chest in user_chests %}
-                <div class="chest-card" data-type="{{ chest.chest_type }}" data-count="{{ chest.count }}" data-rarity="{{ chest.rarity }}" data-server="{{ chest.servidor }}" data-server-icon="{{ chest.server_icon|default('') }}">
-                    <!-- Se muestra la imagen del cofre según su tipo -->
-                    <img src="{{ url_for('static', filename='assets/images/cofre-' ~ chest.chest_type ~ '.webp') }}" alt="{{ chest.chest_type }}">
-                    <span class="chest-count">{{ chest.count }}</span>
+                <div class="chest-card" data-type="{{ chest.chest_type }}" data-count="{{ chest.count }}" data-rarity="{{ chest.chest_type }}" data-server="{{ chest.servidor }}" data-server-icon="{{ chest.server_icon|default('') }}">
+                    <div class="chest-media">
+                        <!-- Se muestra la imagen del cofre según su tipo -->
+                        <img src="{{ url_for('static', filename='assets/images/cofre-' ~ chest.chest_type ~ '.webp') }}" alt="{{ chest.chest_type }}">
+                        <span class="chest-count">{{ chest.count }}</span>
+                        <div class="chest-actions">
+                            <button type="button" class="chest-action-btn open-one-btn" data-open-count="1">Abrir 1 cofre</button>
+                            {% if chest.count > 1 %}
+                            <button type="button" class="chest-action-btn open-all-btn" data-open-count="{{ chest.count }}">Abrir {{ chest.count }} cofres</button>
+                            {% endif %}
+                        </div>
+                    </div>
                     <!-- Información adicional sobre la rareza y el servidor -->
                     <div class="chest-info">
                         <div class="chest-rarity">

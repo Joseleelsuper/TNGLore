@@ -45,11 +45,6 @@
     pointer-events: none;
 }
 
-.chest-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-lg);
-}
-
 .fade-out {
     animation: fadeOut 0.3s forwards;
 }

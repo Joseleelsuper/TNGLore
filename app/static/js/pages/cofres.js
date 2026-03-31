@@ -1,6 +1,7 @@
 import { abrirOverlayCarta } from '../utils/shared.js';
 
 const PLACEHOLDER_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%23dee2e6'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20' fill='%23868e96'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E";
+
 function fixGuildIcon(url) {
     if (!url) return PLACEHOLDER_ICON;
     if (url.includes('cdn.discordapp.com') && !/\.(png|jpg|jpeg|webp|gif)(\?.*)?$/i.test(url)) {
@@ -9,11 +10,29 @@ function fixGuildIcon(url) {
     return url;
 }
 
+function normalizeRarityClass(value) {
+    return value
+    ? value.toLowerCase().normalize('NFD').replaceAll(/[\u0300-\u036f]/g, '')
+        : 'comun';
+}
+
+function createOpenAllButton(count) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'chest-action-btn open-all-btn';
+    button.dataset.openCount = String(count);
+    button.textContent = `Abrir ${count} cofres`;
+    return button;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const serversContainer = document.getElementById('servers-container');
     const cardsDisplay = document.getElementById('cards-display');
-    const cardsContainer = document.getElementById('cards-container');
     const chestData = document.getElementById('chest-data');
+
+    if (!serversContainer || !cardsDisplay || !chestData) {
+        return;
+    }
 
     // Agrupar los cofres por servidor
     organizarCofresPorServidor();
@@ -36,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const server = chest.dataset.server;
             const serverName = chest.querySelector('.chest-server').innerText.replace('Servidor: ', '');
             // Obtener el icono del servidor si está disponible en el dataset
-            let serverIcon = chest.dataset.serverIcon || '';
+            const serverIcon = chest.dataset.serverIcon || '';
             
             if (!serverChests[server]) {
                 serverChests[server] = {
@@ -52,8 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Eliminar la información redundante del servidor en el clon
             const chestInfo = chestClone.querySelector('.chest-info');
             const serverInfo = chestClone.querySelector('.chest-server');
-            if (serverInfo) {
-                chestInfo.removeChild(serverInfo);
+            if (chestInfo && serverInfo) {
+                serverInfo.remove();
             }
             
             serverChests[server].chests.push(chestClone);
@@ -63,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         serversContainer.innerHTML = '';
         
         // Renderizar los cofres agrupados por servidor
-        Object.entries(serverChests).forEach(([serverId, serverData]) => {
+        Object.entries(serverChests).forEach(([, serverData]) => {
             const serverSection = document.createElement('div');
             serverSection.className = 'server-section';
             
@@ -82,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chestsContainer.className = 'chest-container';
             
             // Añadir los cofres al contenedor
-            serverData.chests.forEach(chest => {
+            serverData.chests.forEach((chest) => {
                 chestsContainer.appendChild(chest);
             });
             
@@ -91,108 +110,108 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Delegación de eventos para manejar clics en cofres
-    document.addEventListener('click', async (e) => {
-        const chestCard = e.target.closest('.chest-card');
-        if (!chestCard) return;
-        
-        const chestType = chestCard.dataset.type;
-        const server = chestCard.dataset.server;
-        
-        if (!chestType || !server) return;
-        
-        // Mostrar indicador de carga
+    function setChestButtonsLoading(chestCard, isLoading) {
+        const actionButtons = chestCard.querySelectorAll('.chest-action-btn');
+        actionButtons.forEach((button) => {
+            button.disabled = isLoading;
+        });
+        chestCard.classList.toggle('disabled', isLoading);
+    }
+
+    function showLoadingOverlay(quantity) {
         const loadingOverlay = document.createElement('div');
         loadingOverlay.className = 'loading-overlay';
         loadingOverlay.innerHTML = `
             <div class="spinner"></div>
-            <div class="loading-text">Abriendo cofre...</div>
+            <div class="loading-text">${quantity > 1 ? `Abriendo ${quantity} cofres...` : 'Abriendo cofre...'}</div>
         `;
         document.body.appendChild(loadingOverlay);
-        
-        // Deshabilitar el cofre temporalmente para evitar clics múltiples
-        chestCard.classList.add('disabled');
-        
-        try {
-            // Implementar un timeout en el cliente para evitar esperas muy largas
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 segundos de timeout
-            
-            const response = await fetch('/api/open_chests', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chest_type: chestType, server }),
-                signal: controller.signal
-            }).finally(() => clearTimeout(timeoutId));
-            
-            // Verificar si la respuesta es JSON
-            const contentType = response.headers.get("content-type") || "";
-            if (!contentType.includes("application/json")) {
-                // Intentar manejar errores no JSON (como 504 Gateway Timeout)
-                if (response.status === 504) {
-                    console.error("Timeout en el servidor. Reintentando...");
-                    // Reintentar automáticamente una vez con un nuevo fetch
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    
-                    const retryResponse = await fetch('/api/open_chests', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ chest_type: chestType, server }),
-                    });
-                    
-                    if (!retryResponse.ok || !retryResponse.headers.get("content-type")?.includes("application/json")) {
-                        throw new Error("Error después de reintento");
-                    }
-                    
-                    const data = await retryResponse.json();
-                    processChestResults(data, chestCard);
-                } else {
-                    const text = await response.text();
-                    console.error("Response not JSON:", text);
-                    alert('Error en el servidor. Por favor, inténtalo de nuevo más tarde.');
+        return loadingOverlay;
+    }
+
+    async function openChestsRequest(chestType, server, quantity) {
+        const makeRequest = (signal) => fetch('/api/open_chests_multi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chest_type: chestType, server, quantity }),
+            signal
+        });
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
+        const response = await makeRequest(controller.signal).finally(() => clearTimeout(timeoutId));
+
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            if (response.status === 504) {
+                await new Promise((resolve) => setTimeout(resolve, 500));
+                const retryResponse = await makeRequest();
+                const retryContentType = retryResponse.headers.get('content-type') || '';
+                if (!retryContentType.includes('application/json')) {
+                    throw new Error('Error en el servidor tras reintento');
                 }
-            } else {
-                // Procesamiento normal de respuesta JSON
-                const data = await response.json();
-                if (!response.ok) {
-                    alert(data.error || 'Error al abrir cofre');
-                } else {
-                    processChestResults(data, chestCard);
+                const retryData = await retryResponse.json();
+                if (!retryResponse.ok) {
+                    throw new Error(retryData.error || 'Error al abrir cofres');
                 }
+                return retryData;
             }
-        } catch (error) {
-            console.error('Error:', error);
-            if (error.name === 'AbortError') {
-                alert('La operación tomó demasiado tiempo. Por favor, inténtalo de nuevo.');
-            } else {
-                alert('Ocurrió un error al abrir el cofre. Por favor, inténtalo de nuevo.');
-            }
-        } finally {
-            // Eliminar indicador de carga y habilitar el cofre nuevamente
-            document.body.removeChild(loadingOverlay);
-            chestCard.classList.remove('disabled');
+            throw new Error('Respuesta inválida del servidor');
         }
-    });
-    
-    // Función para procesar los resultados de abrir un cofre
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Error al abrir cofres');
+        }
+        return data;
+    }
+
+    function updateActionButtons(chestCard, count) {
+        const actions = chestCard.querySelector('.chest-actions');
+        if (!actions) return;
+
+        let openAllButton = actions.querySelector('.open-all-btn');
+        if (count > 1) {
+            if (!openAllButton) {
+                openAllButton = createOpenAllButton(count);
+                actions.appendChild(openAllButton);
+            }
+            openAllButton.dataset.openCount = String(count);
+            openAllButton.textContent = `Abrir ${count} cofres`;
+        } else if (openAllButton) {
+            openAllButton.remove();
+        }
+    }
+
+    function buildCardGroups(cards) {
+        const groups = new Map();
+        cards.forEach((card) => {
+            const key = card._id || card.card_id || `${card.nombre || card.name || 'sin_nombre'}::${card.rareza || card.rarity || 'comun'}`;
+            if (!groups.has(key)) {
+                groups.set(key, { card, count: 0 });
+            }
+            groups.get(key).count += 1;
+        });
+        return Array.from(groups.values());
+    }
+
     function processChestResults(data, chestCard) {
-        // Mostrar las cartas obtenidas
-        mostrarCartas(data.results.cards);
-        
-        // Actualizar el contador de cofres
-        let count = parseInt(chestCard.dataset.count);
-        count = Math.max(count - 1, 0);
-        chestCard.dataset.count = count;
-        
+        const cards = data?.results?.cards || [];
+        const openedCount = Number.parseInt(data?.results?.chests_opened || '1', 10) || 1;
+
+        mostrarCartas(cards);
+
+        let count = Number.parseInt(chestCard.dataset.count || '0', 10);
+        count = Math.max(count - openedCount, 0);
+        chestCard.dataset.count = String(count);
+
         if (count === 0) {
-            // Animación de desvanecimiento antes de eliminar
             chestCard.classList.add('fade-out');
             setTimeout(() => {
-                chestCard.remove();
-                
-                // Verificar si el contenedor del servidor está vacío y eliminarlo si es necesario
                 const chestsContainer = chestCard.closest('.chest-container');
-                if (chestsContainer && chestsContainer.children.length === 0) {
+                chestCard.remove();
+
+                if (chestsContainer?.children.length === 0) {
                     const serverSection = chestsContainer.closest('.server-section');
                     if (serverSection) {
                         serverSection.classList.add('fade-out');
@@ -200,19 +219,58 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }, 300);
-        } else {
-            // Actualizar el contador visualmente
-            const countElement = chestCard.querySelector('.chest-count');
-            const oldCount = parseInt(countElement.textContent);
-            
-            // Pequeña animación para el cambio de número
+            return;
+        }
+
+        const countElement = chestCard.querySelector('.chest-count');
+        if (countElement) {
             countElement.classList.add('count-change');
             setTimeout(() => {
-                countElement.textContent = count;
+                countElement.textContent = String(count);
                 setTimeout(() => countElement.classList.remove('count-change'), 300);
             }, 150);
         }
+
+        updateActionButtons(chestCard, count);
     }
+
+    // Delegación de eventos para manejar clics de apertura
+    document.addEventListener('click', async (e) => {
+        const actionButton = e.target.closest('.chest-action-btn');
+        if (!actionButton) return;
+
+        const chestCard = actionButton.closest('.chest-card');
+        if (!chestCard || chestCard.classList.contains('disabled')) return;
+
+        const chestType = chestCard.dataset.type;
+        const server = chestCard.dataset.server;
+        if (!chestType || !server) return;
+
+        const currentCount = Number.parseInt(chestCard.dataset.count || '1', 10) || 1;
+        let quantity = Number.parseInt(actionButton.dataset.openCount || '1', 10) || 1;
+        if (actionButton.classList.contains('open-all-btn')) {
+            quantity = currentCount;
+        }
+        quantity = Math.max(1, Math.min(quantity, currentCount));
+
+        const loadingOverlay = showLoadingOverlay(quantity);
+        setChestButtonsLoading(chestCard, true);
+        
+        try {
+            const data = await openChestsRequest(chestType, server, quantity);
+            processChestResults(data, chestCard);
+        } catch (error) {
+            console.error('Error:', error);
+            if (error.name === 'AbortError') {
+                alert('La operación tomó demasiado tiempo. Por favor, inténtalo de nuevo.');
+            } else {
+                alert(error.message || 'Ocurrió un error al abrir el cofre. Por favor, inténtalo de nuevo.');
+            }
+        } finally {
+            loadingOverlay.remove();
+            setChestButtonsLoading(chestCard, false);
+        }
+    });
 
     // Event listeners para manejar el cierre de overlays
     document.addEventListener('click', (e) => {
@@ -248,44 +306,48 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function mostrarCartas(cards) {
-        // Cerrar cualquier overlay abierto antes de mostrar las cartas
         const overlays = document.querySelectorAll('.overlay');
         overlays.forEach(overlay => {
             overlay.style.display = 'none';
         });
+
+        const groupedCards = buildCardGroups(cards);
         
         cardsDisplay.innerHTML = `
             <div>
-                <h2>Cartas Ganadas</h2>
+                <h2>Cartas Ganadas (${cards.length})</h2>
                 <div id="cards-container" class="cards-grid"></div>
                 <button id="close-cards-btn">Cerrar</button>
             </div>
         `;
         
-        // Obtener referencia al contenedor de cartas después de crearlo
         const newCardsContainer = document.getElementById('cards-container');
         
-        // Mostrar cada carta con una animación secuencial
-        cards.forEach((card, index) => {
+        groupedCards.forEach((group, index) => {
+            const card = group.card;
             const div = document.createElement('div');
-            div.className = 'card-item';
+            div.className = 'card-item card-reveal';
+            div.style.animationDelay = `${index * 0.04}s`;
             
-            // Añadir imagen de la carta
             const img = document.createElement('img');
             img.className = 'card-image loaded';
-            // Verificar si tenemos una URL de imagen válida, si no usar una imagen por defecto
             img.src = card.image || card.image_url || '/static/assets/images/placeholder-card.svg';
             img.alt = card.nombre || 'Carta';
             img.loading = 'eager';
             img.decoding = 'async';
             div.appendChild(img);
+
+            if (group.count > 1) {
+                const countBadge = document.createElement('span');
+                countBadge.className = 'card-count-badge';
+                countBadge.textContent = String(group.count);
+                div.appendChild(countBadge);
+            }
             
-            // Añadir información básica de la carta
             const infoDiv = document.createElement('div');
             infoDiv.className = 'card-info';
             
-            // Mostrar rareza con clase CSS
-            const rareza = card.rareza ? card.rareza.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') : 'comun';
+            const rareza = normalizeRarityClass(card.rareza || card.rarity);
             
             infoDiv.innerHTML = `
                 <p class="card-name">${card.nombre || card.name || 'Carta sin nombre'}</p>
@@ -293,7 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             div.appendChild(infoDiv);
             
-            // Hacer clicable para mostrar detalles
             div.addEventListener('click', (e) => {
                 e.stopPropagation();
                 cardsDisplay.style.display = 'none';
@@ -303,21 +364,18 @@ document.addEventListener('DOMContentLoaded', () => {
             newCardsContainer.appendChild(div);
         });
 
-        // Re-añadir event listeners
         document.getElementById('close-cards-btn').addEventListener('click', () => {
             cardsDisplay.style.display = 'none';
         });
         
-        // Mostrar el display de cartas
         cardsDisplay.style.display = 'flex';
         
-        // Añadir efectos de sonido para la revelación de cartas
         try {
             const audio = new Audio('/assets/sounds/card-reveal.mp3');
             audio.volume = 0.5;
             audio.play().catch(err => console.log('Error al reproducir sonido:', err));
         } catch (e) {
-            console.log('Sonido no disponible');
+            console.warn('Sonido no disponible:', e);
         }
     }
 });

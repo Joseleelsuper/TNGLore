@@ -75,7 +75,7 @@
 .chest-card {
     position: relative;
     width: 200px;
-    cursor: pointer;
+    cursor: default;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     overflow: hidden;
@@ -90,16 +90,66 @@
     box-shadow: var(--shadow-lg);
 }
 
+.chest-media {
+    position: relative;
+}
+
 .chest-card img {
     width: 100%;
     height: 200px;
     object-fit: cover;
     display: block;
     transition: transform var(--transition-base);
+    pointer-events: none;
 }
 
 .chest-card:hover img {
     transform: scale(1.05);
+}
+
+.chest-actions {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.45));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast);
+}
+
+.chest-card:hover .chest-actions,
+.chest-card:focus-within .chest-actions {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.chest-action-btn {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 0.75rem;
+    background: rgba(16, 16, 16, 0.78);
+    color: #fff;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
+}
+
+.chest-action-btn:hover:not(:disabled),
+.chest-action-btn:focus-visible:not(:disabled) {
+    background: rgba(33, 33, 33, 0.92);
+    transform: translateY(-1px);
+}
+
+.chest-action-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
 }
 
 .chest-count {
@@ -209,6 +259,19 @@
     position: relative;
 }
 
+.card-count-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: var(--color-primary);
+    color: #fff;
+    border-radius: var(--radius-pill);
+    padding: 2px 8px;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    box-shadow: var(--shadow-sm);
+}
+
 .card-item:hover {
     transform: translateY(-3px);
     border-color: var(--color-primary);
@@ -310,6 +373,11 @@
         width: 36px;
         height: 36px;
     }
+
+    .chest-action-btn {
+        font-size: var(--fs-xs);
+        padding: 0.5rem 0.55rem;
+    }
     
     #cards-container {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -324,6 +392,13 @@
     
     .card-item img.card-image {
         height: 130px;
+    }
+}
+
+@media (hover: none), (pointer: coarse) {
+    .chest-actions {
+        opacity: 1;
+        pointer-events: auto;
     }
 }
 
