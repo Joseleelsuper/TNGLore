@@ -84,6 +84,35 @@ const RARITY_EMOJIS = {
 
 let _userGuilds = [];
 
+function setCodeSpoilerHidden(element) {
+    element.classList.add('is-hidden');
+    element.classList.remove('is-revealed');
+    element.setAttribute('aria-pressed', 'false');
+    element.setAttribute('aria-label', 'Codigo oculto, haz clic para revelar');
+}
+
+function revealCodeSpoiler(element) {
+    if (!element.classList.contains('is-hidden')) return;
+    element.classList.remove('is-hidden');
+    element.classList.add('is-revealed');
+    element.setAttribute('aria-pressed', 'true');
+    element.setAttribute('aria-label', 'Codigo revelado');
+}
+
+function asSafeHttpUrl(rawUrl) {
+    if (!rawUrl) return null;
+    const parser = document.createElement('a');
+    parser.href = rawUrl;
+    if (parser.protocol !== 'https:' && parser.protocol !== 'http:') return null;
+    return parser.href;
+}
+
+document.addEventListener('click', (event) => {
+    const spoiler = event.target.closest('.spoiler-code');
+    if (!spoiler) return;
+    revealCodeSpoiler(spoiler);
+});
+
 async function loadActiveEvents() {
     const container = document.getElementById('events-container');
     try {
@@ -182,12 +211,40 @@ function renderEventTrack(ev, track, info) {
     if (ev.completed) {
         info.innerHTML = '<p class="dr-complete">🎉 ¡Has completado este evento!</p>';
         if (ev.assigned_code) {
-            info.innerHTML += `<p class="dr-code-reveal">Tu código: <strong>${ev.assigned_code.code}</strong></p>`;
+            const codeReveal = document.createElement('p');
+            codeReveal.className = 'dr-code-reveal';
+
+            const label = document.createElement('span');
+            label.textContent = 'Tu codigo: ';
+            codeReveal.appendChild(label);
+
+            const codeSpoiler = document.createElement('button');
+            codeSpoiler.type = 'button';
+            codeSpoiler.className = 'spoiler-code dr-code-spoiler';
+            codeSpoiler.textContent = ev.assigned_code.code || '';
+            setCodeSpoilerHidden(codeSpoiler);
+            codeReveal.appendChild(codeSpoiler);
+
+            info.appendChild(codeReveal);
+
             if (ev.assigned_code.description) {
-                info.innerHTML += `<p class="dr-code-desc">${ev.assigned_code.description}</p>`;
+                const desc = document.createElement('p');
+                desc.className = 'dr-code-desc';
+                desc.textContent = ev.assigned_code.description;
+                info.appendChild(desc);
             }
-            if (ev.assigned_code.link) {
-                info.innerHTML += `<p class="dr-code-desc"><a href="${ev.assigned_code.link}" target="_blank" rel="noopener">🔗 Canjear aquí</a></p>`;
+
+            const safeLink = asSafeHttpUrl(ev.assigned_code.link);
+            if (safeLink) {
+                const linkRow = document.createElement('p');
+                linkRow.className = 'dr-code-desc';
+                const link = document.createElement('a');
+                link.href = safeLink;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.textContent = '🔗 Canjear aquí';
+                linkRow.appendChild(link);
+                info.appendChild(linkRow);
             }
         }
     }
@@ -196,6 +253,7 @@ function renderEventTrack(ev, track, info) {
 // ─── Custom Popup ─────────────────────────────────────────────────
 
 function showRewardPopup({ title, emoji, message, code, codeLink, onClose }) {
+    const safeCodeLink = asSafeHttpUrl(codeLink);
     const backdrop = document.createElement('div');
     backdrop.className = 'reward-popup-backdrop';
     backdrop.innerHTML = `
@@ -203,13 +261,26 @@ function showRewardPopup({ title, emoji, message, code, codeLink, onClose }) {
             <div class="popup-emoji">${emoji || '🎉'}</div>
             <h3>${title || 'Recompensa'}</h3>
             <p class="popup-msg">${message || ''}</p>
-            ${code ? `<div class="popup-code">${code}</div>` : ''}
-            ${codeLink ? `<a class="popup-code-link" href="${codeLink}" target="_blank" rel="noopener">🔗 Canjear aquí</a>` : ''}
+            ${code ? '<div class="popup-code"></div>' : ''}
+            ${safeCodeLink ? `<a class="popup-code-link" href="${safeCodeLink}" target="_blank" rel="noopener">🔗 Canjear aquí</a>` : ''}
             <div class="popup-actions">
                 <button class="popup-btn popup-btn-primary" data-action="ok">Aceptar</button>
             </div>
         </div>
     `;
+
+    if (code) {
+        const codeContainer = backdrop.querySelector('.popup-code');
+        if (codeContainer) {
+            const codeSpoiler = document.createElement('button');
+            codeSpoiler.type = 'button';
+            codeSpoiler.className = 'spoiler-code popup-code-spoiler';
+            codeSpoiler.textContent = code;
+            setCodeSpoilerHidden(codeSpoiler);
+            codeContainer.appendChild(codeSpoiler);
+        }
+    }
+
     document.body.appendChild(backdrop);
     backdrop.querySelector('[data-action="ok"]').addEventListener('click', () => {
         backdrop.remove();

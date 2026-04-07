@@ -13,6 +13,27 @@ function extraerID(objeto) {
     return null;
 }
 
+function setCodeSpoilerHidden(element) {
+    element.classList.add('is-hidden');
+    element.classList.remove('is-revealed');
+    element.setAttribute('aria-pressed', 'false');
+    element.setAttribute('aria-label', 'Codigo oculto, haz clic para revelar');
+}
+
+function revealCodeSpoiler(element) {
+    if (!element.classList.contains('is-hidden')) return;
+    element.classList.remove('is-hidden');
+    element.classList.add('is-revealed');
+    element.setAttribute('aria-pressed', 'true');
+    element.setAttribute('aria-label', 'Codigo revelado');
+}
+
+function manejarClickSpoilerCodigo(event) {
+    const spoiler = event.target.closest('.spoiler-code');
+    if (!spoiler) return;
+    revealCodeSpoiler(spoiler);
+}
+
 // ── Module-level data stores for search/filter ─────────────────
 /** @type {Array<Object>} */
 let _allCartas = [];
@@ -56,6 +77,7 @@ function setupEventListeners() {
     document.getElementById('usuarios-sort').addEventListener('change', ordenarUsuarios);
     document.getElementById('codigos-filter').addEventListener('change', buscarCodigos);
     document.getElementById('eventos-filter').addEventListener('change', buscarEventos);
+    document.addEventListener('click', manejarClickSpoilerCodigo);
 
     // Barras de búsqueda
     document.getElementById('cartas-search')?.addEventListener('input', buscarCartas);
@@ -851,7 +873,7 @@ function crearElementoCodigo(code) {
 
     div.innerHTML = `
         <div class="card-content">
-            <h3 class="card-title codigo-value">${code.code}</h3>
+            <h3 class="card-title codigo-value"></h3>
             <p class="codigo-description">${code.description || 'Sin descripción'}</p>
             ${code.link ? `<a class="codigo-link" href="${code.link}" target="_blank" rel="noopener">🔗 Enlace de canje</a>` : ''}
             <span class="codigo-status ${statusClass}">${statusText}</span>
@@ -862,6 +884,17 @@ function crearElementoCodigo(code) {
             <button onclick="eliminarCodigo('${code._id}')" class="admin-btn eliminar-btn">Eliminar</button>
         </div>
     `;
+
+    const title = div.querySelector('.codigo-value');
+    if (title) {
+        const spoiler = document.createElement('button');
+        spoiler.type = 'button';
+        spoiler.className = 'spoiler-code codigo-spoiler';
+        spoiler.textContent = code.code || '';
+        setCodeSpoilerHidden(spoiler);
+        title.appendChild(spoiler);
+    }
+
     return div;
 }
 

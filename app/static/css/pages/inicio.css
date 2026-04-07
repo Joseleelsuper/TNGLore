@@ -309,15 +309,13 @@
 }
 
 .reward-popup .popup-code {
-    font-family: var(--font-mono);
-    font-size: var(--fs-md);
-    color: var(--color-accent);
-    background: #f0f0ff;
-    padding: 6px 14px;
-    border-radius: var(--radius-sm);
-    display: inline-block;
+    text-align: center;
     margin-bottom: var(--sp-2);
-    word-break: break-all;
+}
+
+.reward-popup .popup-code .spoiler-code {
+    font-size: var(--fs-md);
+    min-width: 180px;
 }
 
 .reward-popup .popup-code-link {
