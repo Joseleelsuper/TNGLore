@@ -809,6 +809,13 @@ function normMaxUses(code) {
     return (v === null || v === undefined) ? 1 : v;
 }
 
+function isCodeExpired(code) {
+    if (!code?.expires_at) return false;
+    const expiresAt = new Date(code.expires_at);
+    if (Number.isNaN(expiresAt.getTime())) return false;
+    return expiresAt.getTime() <= Date.now();
+}
+
 function crearElementoCodigo(code) {
     const div = document.createElement('div');
     div.className = 'card codigo-card';
@@ -816,11 +823,15 @@ function crearElementoCodigo(code) {
     const maxUses = normMaxUses(code);
     const isUnlimited = maxUses === 0;
     const hasCapacity = isUnlimited || currentUses < maxUses;
+    const isExpired = isCodeExpired(code);
 
     let statusClass, statusText;
     if (!code.active) {
         statusClass = 'status-inactive';
         statusText = 'Inactivo';
+    } else if (isExpired) {
+        statusClass = 'status-expired';
+        statusText = 'Expirado';
     } else if (isUnlimited) {
         statusClass = 'status-available';
         statusText = `Usos: ${currentUses}/∞`;
@@ -893,6 +904,7 @@ function buscarCodigos() {
     if (status === 'available') {
         filtered = filtered.filter(c => {
             if (!c.active) return false;
+            if (isCodeExpired(c)) return false;
             const max = normMaxUses(c);
             return max === 0 || (c.current_uses || 0) < max;
         });
