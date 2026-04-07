@@ -135,6 +135,65 @@ img {
     padding: 0 var(--sp-4);
 }
 
+/* ── Shared code spoiler ─────────────────────────────────── */
+.spoiler-code {
+    appearance: none;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: #111827;
+    color: transparent;
+    cursor: pointer;
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: inherit;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.35;
+    max-width: 100%;
+    padding: 4px 10px;
+    position: relative;
+    transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+    word-break: break-all;
+}
+
+.spoiler-code.is-hidden {
+    user-select: none;
+}
+
+.spoiler-code.is-hidden::after {
+    content: 'SPOILER';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f8fafc;
+    font-family: var(--font-family);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.spoiler-code.is-hidden:hover {
+    background: #1f2937;
+}
+
+.spoiler-code.is-hidden:active {
+    transform: scale(0.98);
+}
+
+.spoiler-code.is-revealed {
+    background: var(--color-primary-light);
+    box-shadow: inset 0 0 0 1px rgba(77, 124, 255, 0.3);
+    color: var(--color-primary-dark);
+    user-select: text;
+}
+
+.spoiler-code:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
 /* ── Card system (shared across all pages) ───────────────── */
 .card {
     background: var(--color-surface);

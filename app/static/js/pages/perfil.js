@@ -7,12 +7,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteAccountModal = document.getElementById('delete-account-modal');
     const deleteAccountForm = document.getElementById('delete-account-form');
     const cancelDeleteBtn = document.getElementById('cancel-delete');
+    const codesList = document.getElementById('codes-list');
 
     // Cargar servidores del bot via AJAX (no bloquea el render de la página)
     loadBotServers();
 
     // Cargar códigos del usuario
     loadUserCodes();
+
+    if (codesList) {
+        codesList.addEventListener('click', (event) => {
+            const spoiler = event.target.closest('.spoiler-code');
+            if (!spoiler || !codesList.contains(spoiler)) return;
+            revealCodeSpoiler(spoiler);
+        });
+    }
 
     // Cargar historial de cofres
     loadOpeningHistory();
@@ -73,6 +82,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+function setCodeSpoilerHidden(element) {
+    element.classList.add('is-hidden');
+    element.classList.remove('is-revealed');
+    element.setAttribute('aria-pressed', 'false');
+    element.setAttribute('aria-label', 'Codigo oculto, haz clic para revelar');
+}
+
+function revealCodeSpoiler(element) {
+    if (!element.classList.contains('is-hidden')) return;
+    element.classList.remove('is-hidden');
+    element.classList.add('is-revealed');
+    element.setAttribute('aria-pressed', 'true');
+    element.setAttribute('aria-label', 'Codigo revelado');
+}
+
 /**
  * Carga los servidores del bot via AJAX para no bloquear el render de /perfil.
  */
@@ -127,9 +151,11 @@ async function loadUserCodes() {
             const entry = document.createElement('div');
             entry.className = 'code-entry';
 
-            const value = document.createElement('div');
-            value.className = 'code-value';
+            const value = document.createElement('button');
+            value.type = 'button';
+            value.className = 'code-value spoiler-code';
             value.textContent = c.code;
+            setCodeSpoilerHidden(value);
             entry.appendChild(value);
 
             if (c.description) {
