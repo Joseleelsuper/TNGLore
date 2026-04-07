@@ -247,6 +247,7 @@ def _assign_random_card_by_rarity(
 def active_events() -> tuple:
     """Lista los eventos activos con el progreso del usuario en cada uno."""
     try:
+        now = datetime.now(timezone.utc)
         events = _get_active_events()
         chest_images = get_chest_images()
 
@@ -309,6 +310,10 @@ def active_events() -> tuple:
             if completed:
                 code_doc = mongo.codes.find_one({
                     "assigned_users.email": current_user.email,
+                    "$or": [
+                        {"expires_at": None},
+                        {"expires_at": {"$gt": now}},
+                    ],
                 })
                 if code_doc:
                     assigned_code = {

@@ -236,6 +236,11 @@ input:focus, textarea:focus, select:focus {
     color: var(--color-success);
 }
 
+.status-expired {
+    background: #b71c1c;
+    color: #fff;
+}
+
 .status-assigned {
     background: rgba(230, 81, 0, 0.1);
     color: #e65100;
